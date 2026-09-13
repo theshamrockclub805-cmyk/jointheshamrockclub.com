@@ -288,7 +288,7 @@ header .brand img{height:54px}
 .hero-main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.72fr);gap:64px;align-items:center;margin-top:24px}
 .hero-copy{padding:0;max-width:760px}
 .hero-badge{display:inline-flex;padding:6px 10px;border-radius:7px;background:rgba(225,6,0,.9);color:#fff;font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;margin-bottom:12px}
-.hero h1{font-size:clamp(52px,7vw,88px);line-height:.98;max-width:790px;margin:0 0 22px;color:#fff}
+.hero h1{font-size:clamp(40px,4.6vw,58px);line-height:1.04;max-width:820px;margin:0 0 22px;color:#fff}
 .hero h1 em{color:#ffbbb8}
 .hero .lede{font-size:clamp(18px,2vw,21px);line-height:1.55;max-width:690px;color:#e6e4f4;margin-bottom:0}
 .hero-actions{margin-top:32px}
@@ -399,6 +399,14 @@ footer{background:#080525;padding:38px 0}
 .footer-row{align-items:flex-start}
 .footer-brand img{height:42px}
 
+/* Application CTAs */
+.step-link{display:inline-flex;align-items:center;gap:7px;margin-top:16px;color:var(--red);font-size:14px;font-weight:800}
+.step-link:hover{gap:11px}
+.corporate-apply{display:inline-flex;align-items:center;gap:7px;margin-top:16px;color:#ffb7b4;font-size:13px;font-weight:800}
+.corporate-apply:hover{color:#fff;gap:11px}
+.corporate-actions{display:flex;flex-wrap:wrap;gap:13px;margin-top:28px}
+@media(max-width:680px){.corporate-actions{display:grid;grid-template-columns:1fr}.corporate-actions .btn{width:100%}}
+
 /* Focus states */
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,details:focus-visible,.gallery-rail:focus-visible{
   outline:3px solid rgba(225,6,0,.36);outline-offset:3px
@@ -427,7 +435,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   .hero-content{padding-top:86px;padding-bottom:34px}
   .hero-kicker{font-size:9px;letter-spacing:.1em;padding:7px 10px}
   .hero-main{gap:26px;margin-top:18px}
-  .hero h1{font-size:clamp(45px,13vw,64px);line-height:1.0}
+  .hero h1{font-size:clamp(30px,8vw,40px);line-height:1.08}
   .hero .lede{font-size:17px;line-height:1.6}
   .hero-actions{display:grid;grid-template-columns:1fr;gap:11px;margin-top:25px}
   .hero-actions .btn{width:100%}
@@ -485,7 +493,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     <div class="hero-main">
       <div class="hero-copy">
         <div class="hero-badge">Sponsor spotlight</div>
-        <h1 id="hero-title">Put your business <em>where your community can see it.</em></h1>
+        <h1 id="hero-title">Your Business Supports the Youth. <em>The Community Supports Your Business.</em></h1>
         <p class="lede">Sponsor a local school through Shamrock Club and receive meaningful visibility, community recognition, and opportunities to connect your business with local families.</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#pricing">See Sponsorship Packages</a>
@@ -515,7 +523,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   <div class="wrap cred-grid">
     <div class="cred-item"><strong>1 School</strong><span>Single-school packages</span></div>
     <div class="cred-item"><strong>3 Tiers</strong><span>Bronze · Silver · Gold</span></div>
-    <div class="cred-item"><strong>10 High Schools in the Network</strong><span>Corporate sponsorship reach</span></div>
+    <div class="cred-item"><strong>10 High Schools </strong><span>In the Network</span></div>
     <div class="cred-item"><strong>Category Exclusive</strong><span>Built into the school model</span></div>
   </div>
 </section>
@@ -573,6 +581,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <div class="step-num">3</div>
         <h3>Sign Up or Ask Us First</h3>
         <p>Ready businesses can move directly to the application. Businesses with questions can request a call instead of abandoning the page.</p>
+        <a class="step-link" href="application-form.html">Start an Application &rarr;</a>
       </article>
     </div>
   </div>
@@ -615,7 +624,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <li>Invitation to Shamrock events</li>
           <li>Tax deduction receipt</li>
         </ul>
-        <a class="btn btn-secondary" href="application-form.html">Choose Bronze</a>
+        <a class="btn btn-secondary" href="application-form.html?tier=bronze">Choose Bronze</a>
       </article>
 
       <article class="package featured">
@@ -630,7 +639,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <li>Logo on Shamrock marketing materials</li>
           <li>Plaque of recognition displayed at the school</li>
         </ul>
-        <a class="btn btn-primary" href="application-form.html">Choose Silver</a>
+        <a class="btn btn-primary" href="application-form.html?tier=silver">Choose Silver</a>
       </article>
 
       <article class="package">
@@ -648,7 +657,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <li>Automobile freeway screen highlight</li>
           <li>VIP seating/experience at Shamrock mixers</li>
         </ul>
-        <a class="btn btn-secondary" href="application-form.html">Choose Gold</a>
+        <a class="btn btn-secondary" href="application-form.html?tier=gold">Choose Gold</a>
       </article>
     </div>
 
@@ -674,6 +683,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <li>Membership cards for 3 team members</li>
             <li>23% savings vs. separate purchase</li>
           </ul>
+          <a class="corporate-apply" href="application-form.html?tier=district-partner">Apply for District Partner &rarr;</a>
         </article>
 
         <article class="corporate-card">
@@ -686,6 +696,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <li>Co-branded impact video</li>
             <li>31% savings vs. separate purchase</li>
           </ul>
+          <a class="corporate-apply" href="application-form.html?tier=district-leader">Apply for District Leader &rarr;</a>
         </article>
 
         <article class="corporate-card">
@@ -698,10 +709,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <li>Direct input on fund allocation</li>
             <li>41% savings vs. separate purchase</li>
           </ul>
+          <a class="corporate-apply" href="application-form.html?tier=district-champion">Apply for District Champion &rarr;</a>
         </article>
       </div>
-      <div style="margin-top:26px">
-        <a class="btn btn-light" href="#inquire">Talk About Corporate Sponsorship</a>
+      <div class="corporate-actions">
+        <a class="btn btn-primary" href="application-form.html?tier=district-partner">Apply as a Corporate Sponsor</a>
+        <a class="btn btn-outline" href="#inquire">Talk About Corporate Sponsorship</a>
       </div>
     </div>
   </div>
