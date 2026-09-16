@@ -283,15 +283,15 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <input type="radio" name="tier" value="district-partner">
               <span class="card">
                 <span class="dot" aria-hidden="true"></span>
-                <span class="meta"><span class="name">District Partner</span><span class="desc">Gold-level benefits at 3 schools</span></span>
-                <span class="cost">$3,497 <small>/ yr</small></span>
+                <span class="meta"><span class="name">District Partner</span><span class="desc">Gold-level benefits at 2 schools</span></span>
+                <span class="cost">$3,197 <small>/ yr</small></span>
               </span>
             </label>
             <label class="tier-opt">
               <input type="radio" name="tier" value="district-leader">
               <span class="card">
                 <span class="dot" aria-hidden="true"></span>
-                <span class="meta"><span class="name">District Leader</span><span class="desc">Gold-level benefits across 6 schools</span></span>
+                <span class="meta"><span class="name">District Leader</span><span class="desc">Gold-level benefits across 5 schools</span></span>
                 <span class="cost">$5,997 <small>/ yr</small></span>
               </span>
             </label>
@@ -299,7 +299,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <input type="radio" name="tier" value="district-champion">
               <span class="card">
                 <span class="dot" aria-hidden="true"></span>
-                <span class="meta"><span class="name">District Champion</span><span class="desc">District-wide reach, all 12 schools</span></span>
+                <span class="meta"><span class="name">District Champion</span><span class="desc">District-wide reach, all 10 schools</span></span>
                 <span class="cost">$9,997 <small>/ yr</small></span>
               </span>
             </label>
@@ -480,19 +480,19 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
 <script>
 (function(){
   var TIERS = {
-    'bronze':{name:'Bronze',desc:'Community Visibility · one school',price:'$497',meta:'$41.42/month equivalent · per school',
-      items:['Shamrock annual membership','Card + app access','Promotional window/counter sticker','Bi-monthly Shamrock social media featured post','Invitation to Shamrock events','Tax deduction receipt']},
-    'silver':{name:'Silver',desc:'Game-Day Presence · one school',price:'$997',meta:'$83.08/month equivalent · per school',
-      items:['Everything in Bronze',"3' × 5' banner at school games and events",'Year-round promotion on Shamrock website and emails','Logo on Shamrock marketing materials','Plaque of recognition displayed at the school']},
-    'gold':{name:'Gold',desc:'Premium Recognition · one school',price:'$1,997',meta:'$166.42/month equivalent · per school',
-      items:['Everything in Silver',"Upgrade to 4' × 6' premium banner placement",'Weekly Shamrock social media posts','Featured interview: video + written profile','Donor recognition page: digital + print','VIP seating/experience at Shamrock mixers']},
-    'district-partner':{name:'District Partner',desc:'Corporate · 3 schools',price:'$3,497',meta:'Gold-level benefits at schools of choice · 23% savings',
-      items:['Gold-level benefits at 3 schools','Quarterly impact report','Named sponsor at district events','Membership cards for 3 team members']},
-    'district-leader':{name:'District Leader',desc:'Corporate · 6 schools',price:'$5,997',meta:'Gold-level benefits across 6 schools · 31% savings',
-      items:['Gold-level benefits across 6 schools','Dedicated account liaison','Speaking opportunities','Co-branded impact video']},
-    'district-champion':{name:'District Champion',desc:'Corporate · all 12 schools',price:'$9,997',meta:'District-wide sponsorship reach · 41% savings',
-      items:['Gold-level benefits district-wide','Founding patron title','Permanent legacy wall recognition','Direct input on fund allocation']},
-    'undecided':{name:'Not sure yet',desc:"We'll recommend the right fit",price:'—',meta:'Our team will walk you through the options',
+    'bronze':{name:'Bronze',desc:'Community Visibility \u00b7 one school',price:'$497',meta:'$41.42/month equivalent \u00b7 per school',
+      items:['Certificate of Partnership recognizing your support','Promotional window/counter sticker','Invitation to all Shamrock events','Tax-deductible donation receipt']},
+    'silver':{name:'Silver',desc:'Game-Day Presence \u00b7 one school',price:'$997',meta:'$83.08/month equivalent \u00b7 per school',
+      items:['Everything in Bronze',"3' \u00d7 5' banner displayed at school games + events",'Year-round promotion on the Shamrock website + email newsletters','Weekly posts on Shamrock social media','Name on the donor recognition page (digital + print)']},
+    'gold':{name:'Gold',desc:'Premium Recognition \u00b7 one school',price:'$1,997',meta:'$166.42/month equivalent \u00b7 per school',
+      items:['Everything in Silver',"Upgrade to 4' \u00d7 6' premium banner placement",'Logo featured on Shamrock marketing materials','Bi-monthly featured post on Shamrock social media','Full media feature: video interview, written profile, and a live spotlight on 99.3 FM','Engraved recognition plaque, sized for your own business','Discounted rate on big-screen TV ad spots at school games','VIP seating/experience at all Shamrock mixers']},
+    'district-partner':{name:'District Partner',desc:'Corporate \u00b7 2 schools',price:'$3,197',meta:'Separately $3,994 \u00b7 save $797 (20% off)',
+      items:['Gold-level benefits at 2 schools of your choice','Quarterly impact report','Spotlight on the shared Corporate Partners page','One Oxnard USA featured boost placement per quarter','10% discount on Oxnard USA and 99.3 FM ad placements']},
+    'district-leader':{name:'District Leader',desc:'Corporate \u00b7 5 schools',price:'$5,997',meta:'Separately $9,985 \u00b7 save $3,988 (40% off)',
+      items:['Gold-level benefits at 5 schools','Quarterly impact report','Dedicated sponsor spotlight page on the Shamrock website','Monthly featured boost placement on the Oxnard USA platform','Podcast-style interview on 99.3 FM','Co-branded impact video','20% discount on Oxnard USA and 99.3 FM ad placements']},
+    'district-champion':{name:'District Champion',desc:'Corporate \u00b7 all 10 schools',price:'$9,997',meta:'Separately $19,970 \u00b7 save $9,973 (50% off)',
+      items:['Gold-level benefits at all 10 schools','Quarterly impact report','Founding Champion recognition','Spotlight page + homepage placement on the Shamrock website','Weekly featured boost across the Oxnard USA platform','Recurring podcast segment on 99.3 FM','Co-branded impact video','Zone exclusivity across all 10 zones, built in',"Invitation to Shamrock's annual partner appreciation dinner",'30% discount on Oxnard USA and 99.3 FM ad placements']},
+    'undecided':{name:'Not sure yet',desc:"We'll recommend the right fit",price:'\u2014',meta:'Our team will walk you through the options',
       items:['Compare the single-school tiers','Understand category exclusivity at your school','Ask about multi-school corporate options','No commitment until you confirm']}
   };
 
