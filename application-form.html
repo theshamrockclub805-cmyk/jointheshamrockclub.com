@@ -141,7 +141,9 @@ fieldset,.apply-grid>*{min-width:0}
 .field>label.check,.check{display:flex;align-items:flex-start;gap:11px;font-size:14px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted);margin-bottom:0}
 .check input{width:18px;height:18px;margin:3px 0 0;accent-color:var(--red);flex:0 0 auto}
 
+.hp-field{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .submit-row{border-top:1px solid var(--line);padding-top:26px}
+.form-note.is-error{color:var(--danger);font-weight:700}
 .submit-row .btn{width:100%;border:0}
 .form-note{font-size:12.5px;color:var(--muted);margin:14px 0 0;text-align:center}
 
@@ -244,7 +246,9 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
   <div class="wrap">
     <div class="apply-grid" id="apply-layout">
 
-      <form class="form-card" id="apply-form" novalidate>
+      <form class="form-card" id="apply-form" name="sponsorship-application" method="POST" data-netlify="true" netlify-honeypot="companyWebsite" enctype="multipart/form-data" novalidate>
+        <input type="hidden" name="form-name" value="sponsorship-application">
+        <p class="hp-field"><label>Company website<input name="companyWebsite" tabindex="-1" autocomplete="off"></label></p>
 
         <fieldset>
           <legend><b>01</b> Your sponsorship</legend>
@@ -374,6 +378,37 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
             <div class="field">
               <label for="role">Your role</label>
               <input type="text" id="role" name="role" placeholder="Owner, manager, marketing">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="best-day">Best day to reach you</label>
+              <select id="best-day" name="bestDay">
+                <option value="any">Any weekday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="best-time">Best time block</label>
+              <select id="best-time" name="bestTime">
+                <option value="any">Any time</option>
+                <option value="8">8:00 &ndash; 9:00 AM</option>
+                <option value="9">9:00 &ndash; 10:00 AM</option>
+                <option value="10">10:00 &ndash; 11:00 AM</option>
+                <option value="11">11:00 AM &ndash; 12:00 PM</option>
+                <option value="12">12:00 &ndash; 1:00 PM</option>
+                <option value="13">1:00 &ndash; 2:00 PM</option>
+                <option value="14">2:00 &ndash; 3:00 PM</option>
+                <option value="15">3:00 &ndash; 4:00 PM</option>
+                <option value="16">4:00 &ndash; 5:00 PM</option>
+                <option value="17">5:00 &ndash; 6:00 PM</option>
+              </select>
+              <p class="hint">Pacific time.</p>
             </div>
           </div>
         </fieldset>
@@ -537,6 +572,38 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     if (e.target.name === 'tier') renderSummary();
   });
 
+  var submitButton = form.querySelector('button[type=submit]');
+  var submitNote = form.querySelector('.form-note');
+  var defaultNote = submitNote ? submitNote.textContent : '';
+
+  function encode(data){
+    return Object.keys(data).map(function(k){
+      return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+    }).join('&');
+  }
+
+  // The form field names and the Airtable payload keys differ; map them explicitly.
+  function payloadFrom(data){
+    return {
+      formType: 'application',
+      tier: selectedTier(),
+      bizName: data['biz-name'] || '',
+      category: data.category || '',
+      city: data.city || '',
+      website: data.website || '',
+      contactName: data['contact-name'] || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      role: data.role || '',
+      bestDay: data.bestDay || '',
+      bestTime: data.bestTime || '',
+      school: data.school || '',
+      heard: data.heard || '',
+      notes: data.notes || '',
+      callback: !!document.getElementById('callback').checked
+    };
+  }
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var valid = true;
@@ -558,9 +625,37 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       return;
     }
 
-    layout.style.display = 'none';
-    successPanel.style.display = 'block';
-    successPanel.scrollIntoView({behavior:'smooth', block:'center'});
+    var data = {};
+    new FormData(form).forEach(function(value, key){
+      if (!(value instanceof File)) data[key] = value;
+    });
+
+    if (submitButton) submitButton.disabled = true;
+    if (submitNote) submitNote.textContent = 'Submitting your application...';
+
+    // Netlify Forms keeps a copy (including the uploaded logo); the function files
+    // the application in Airtable.
+    var captured = fetch('/', {
+      method: 'POST',
+      body: new FormData(form)
+    }).catch(function(){ return null; });
+
+    var filed = fetch('/.netlify/functions/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payloadFrom(data))
+    }).then(function(res){ return res.ok; }).catch(function(){ return false; });
+
+    Promise.all([captured, filed]).then(function(results){
+      if (!results[1]) {
+        console.warn('Application was captured by Netlify Forms but not filed in Airtable.');
+      }
+      if (submitButton) submitButton.disabled = false;
+      if (submitNote) submitNote.textContent = defaultNote;
+      layout.style.display = 'none';
+      successPanel.style.display = 'block';
+      successPanel.scrollIntoView({behavior:'smooth', block:'center'});
+    });
   });
 })();
 </script>
