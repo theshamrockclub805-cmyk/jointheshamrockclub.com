@@ -46,6 +46,12 @@ In Netlify: **Site configuration → Environment variables → Add a variable**
 | --- | --- |
 | `AIRTABLE_TOKEN` | the token you just copied |
 
+The name is matched case-insensitively and the value is trimmed, so
+`Airtable_Token` or a value with a stray space still works. Make sure the
+variable is scoped to **Functions** (or all scopes) and applies to the
+**Production** deploy context, then redeploy — Netlify binds environment
+variables into functions at deploy time.
+
 That is the only required variable. These three are optional and already default
 to the correct IDs — set them only if you move to a different base or table:
 

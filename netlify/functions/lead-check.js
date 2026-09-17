@@ -9,10 +9,21 @@
  * Delete this file once the integration is confirmed working.
  */
 
-var BASE_ID = process.env.AIRTABLE_BASE_ID || 'appiaYFwD340oK6uQ';
+function env(name) {
+  var value = process.env[name];
+  if (value === undefined) {
+    var match = Object.keys(process.env).find(function (key) {
+      return key.toLowerCase() === name.toLowerCase();
+    });
+    if (match) value = process.env[match];
+  }
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+var BASE_ID = env('AIRTABLE_BASE_ID') || 'appiaYFwD340oK6uQ';
 
 exports.handler = async function () {
-  var token = process.env.AIRTABLE_TOKEN;
+  var token = env('AIRTABLE_TOKEN');
 
   // Names only (never values), to catch a typo'd or differently-named variable.
   var airtableVarNames = Object.keys(process.env)
@@ -33,7 +44,7 @@ exports.handler = async function () {
     try {
       // whoami needs no special scope: it just proves the token is real.
       var who = await fetch('https://api.airtable.com/v0/meta/whoami', {
-        headers: { 'Authorization': 'Bearer ' + token.trim() }
+        headers: { 'Authorization': 'Bearer ' + token }
       });
       var body = await who.json().catch(function () { return {}; });
       report.airtableSaysToken = who.status === 200 ? 'valid' : 'rejected (HTTP ' + who.status + ')';

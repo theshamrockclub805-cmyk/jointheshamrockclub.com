@@ -13,9 +13,25 @@
  *   AIRTABLE_BASE_ID, AIRTABLE_INQUIRY_TABLE_ID, AIRTABLE_APPLICATION_TABLE_ID
  */
 
-var BASE_ID = process.env.AIRTABLE_BASE_ID || 'appiaYFwD340oK6uQ';
-var INQUIRY_TABLE = process.env.AIRTABLE_INQUIRY_TABLE_ID || 'tblOuamBk2lzzGTCb';
-var APPLICATION_TABLE = process.env.AIRTABLE_APPLICATION_TABLE_ID || 'tbl79enOo6bpusR00';
+/**
+ * Read an environment variable, tolerating a different capitalisation of the
+ * name (Airtable_Token, airtable_token, ...) and surrounding whitespace in the
+ * value. Hosting dashboards make both mistakes easy to introduce by hand.
+ */
+function env(name) {
+  var value = process.env[name];
+  if (value === undefined) {
+    var match = Object.keys(process.env).find(function (key) {
+      return key.toLowerCase() === name.toLowerCase();
+    });
+    if (match) value = process.env[match];
+  }
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+var BASE_ID = env('AIRTABLE_BASE_ID') || 'appiaYFwD340oK6uQ';
+var INQUIRY_TABLE = env('AIRTABLE_INQUIRY_TABLE_ID') || 'tblOuamBk2lzzGTCb';
+var APPLICATION_TABLE = env('AIRTABLE_APPLICATION_TABLE_ID') || 'tbl79enOo6bpusR00';
 
 var TZ = 'America/Los_Angeles';
 var MAX_BODY_BYTES = 64 * 1024;
@@ -252,7 +268,7 @@ exports.handler = async function (event) {
     return json(400, { ok: false, error: 'A valid email address is required' });
   }
 
-  var token = process.env.AIRTABLE_TOKEN;
+  var token = env('AIRTABLE_TOKEN');
   if (!token) {
     console.error('AIRTABLE_TOKEN is not set; submission was not forwarded to Airtable.');
     return json(503, { ok: false, error: 'Airtable is not configured yet' });
@@ -293,6 +309,7 @@ exports.handler = async function (event) {
 
 // Exported for local testing.
 exports._internals = {
+  env: env,
   buildInquiryRecord: buildInquiryRecord,
   buildApplicationRecord: buildApplicationRecord,
   nextMatchingSlot: nextMatchingSlot,
