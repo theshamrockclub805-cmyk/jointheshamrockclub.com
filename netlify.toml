@@ -6,3 +6,8 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Airtable cannot write across bases on its own, so approved applications are
+# pulled into the Client Deliverables Hub on a schedule instead.
+[functions."sync-approved"]
+  schedule = "*/15 * * * *"

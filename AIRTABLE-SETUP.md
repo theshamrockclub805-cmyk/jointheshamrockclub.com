@@ -115,3 +115,35 @@ read the log — the function logs the reason Airtable rejected a record.
   first.
 - **Spam** is filtered two ways: a hidden honeypot field the function checks, and
   Netlify's own spam filtering on the stored submissions.
+
+## Approved applications -> Client Deliverables Hub
+
+Airtable cannot link or write across bases without paid Sync, so a scheduled
+function does it instead. Every 15 minutes `sync-approved` looks for
+applications where **Application Status = Approved** and **Pushed to
+Deliverables Hub** is unticked, then:
+
+1. creates the matching **Client** in the Hub as `Onboarding` /
+   `Awaiting payment`, with the package resolved to a real link by name,
+2. writes the applicant's contact, category, city, website, contact window and
+   notes into CRM Notes so the first call needs no digging,
+3. ticks **Pushed to Deliverables Hub** and records the new Client's record ID.
+
+The application is only stamped *after* the Client exists, so a failure leaves
+it to be retried on the next run rather than silently dropped.
+
+Recording the payment on that Client (Payment Status -> Paid) is what triggers
+deliverable generation.
+
+### Token scope
+
+`AIRTABLE_TOKEN` must now cover **both** bases:
+
+| Base | Needs |
+| --- | --- |
+| Lead Follow-Up Funnel | `data.records:read`, `data.records:write` |
+| Client Deliverables Hub | `data.records:read`, `data.records:write` |
+
+Add the Hub base to the existing token at <https://airtable.com/create/tokens>,
+or set `AIRTABLE_HUB_BASE_ID` and friends if you ever move bases. Until the
+token covers both, the sync logs a clear Airtable 403 and changes nothing.
