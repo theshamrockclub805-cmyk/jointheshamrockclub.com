@@ -789,7 +789,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <div><label for="business">BUSINESS NAME</label><input id="business" name="business" type="text" placeholder="Business name" autocomplete="organization" required></div>
       </div>
       <div class="form-row">
-        <div><label for="phone">PHONE</label><input id="phone" name="phone" type="tel" placeholder="Best phone number" autocomplete="tel"></div>
+        <div><label for="phone">PHONE</label><input id="phone" name="phone" type="tel" placeholder="Best phone number" autocomplete="tel" required></div>
         <div><label for="email">EMAIL</label><input id="email" name="email" type="email" placeholder="you@business.com" autocomplete="email" required></div>
       </div>
       <label for="interest">WHAT WOULD YOU LIKE TO DISCUSS?</label>
@@ -941,10 +941,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
     var invalid = null;
     [['name','Please enter your name.'],
      ['business','Please enter your business name.'],
+     ['phone','Please enter a phone number we can reach you on.'],
      ['email','Please enter a valid email address.']].forEach(function(pair){
       var field = form.querySelector('[name="' + pair[0] + '"]');
       var ok = String(field.value || '').trim().length > 0;
       if (ok && pair[0] === 'email') ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value.trim());
+      if (ok && pair[0] === 'phone') ok = field.value.replace(/\D/g,'').length >= 10;
       field.classList.toggle('is-invalid', !ok);
       if (!ok && !invalid) invalid = { field: field, message: pair[1] };
     });

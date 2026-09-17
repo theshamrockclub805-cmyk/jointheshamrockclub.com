@@ -97,6 +97,7 @@ read the log — the function logs the reason Airtable rejected a record.
 | Preferred School or Program, How Did You Hear, Applicant Notes | the matching form fields |
 | Callback Requested | the "have someone call me" checkbox |
 | Preferred Contact Window | e.g. `Tuesday, 9:00-10:00 AM PT` |
+| Requested Call Time | the next date that window falls on, as a real timestamp |
 | Source | `Landing page - Sponsorship Application` |
 | Application Status / Funnel Stage / Review Status / Follow-Up Status | `Submitted` / `Application Received` / `Not Reviewed` / `Not Started` |
 

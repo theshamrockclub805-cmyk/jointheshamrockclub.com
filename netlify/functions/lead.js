@@ -227,6 +227,9 @@ function buildApplicationRecord(data, now) {
   var windowLabel = contactWindowLabel(clean(data.bestDay, 10), clean(data.bestTime, 10));
   if (windowLabel) fields['Preferred Contact Window'] = windowLabel;
 
+  var slot = nextMatchingSlot(clean(data.bestDay, 10), clean(data.bestTime, 10), now);
+  if (slot) fields['Requested Call Time'] = slot.toISOString();
+
   return fields;
 }
 
