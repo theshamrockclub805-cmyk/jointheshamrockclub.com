@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Thank you — The Shamrock Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#17115a;--blue-deep:#09052a;--blue-mid:#2d2378;--blue-soft:#f1f2ff;
+    --red:#e10600;--white:#fff;--ink:#17142b;--muted:#676879;--line:#e4e5ee;
+    --bg:#f7f8fc;--gold:#d5b24a;--radius:24px;--shadow:0 24px 70px rgba(17,11,68,.14);
+    --display:"Oswald",sans-serif;--body:"DM Sans",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:32px 16px;background:var(--bg);color:var(--ink);
+    font:16px/1.65 var(--body),system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  .card{
+    width:100%;max-width:620px;background:var(--white);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:44px 38px;text-align:center;
+  }
+  .mark{
+    display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;
+    border-radius:50%;background:var(--blue-soft);color:var(--blue);margin-bottom:22px;
+  }
+  .mark svg{width:32px;height:32px}
+  .eyebrow{
+    font-family:var(--display);text-transform:uppercase;letter-spacing:.14em;
+    font-size:13px;color:var(--gold);margin:0 0 10px;
+  }
+  h1{
+    font-family:var(--display);font-weight:700;font-size:clamp(28px,5vw,38px);
+    line-height:1.12;margin:0 0 14px;color:var(--blue);text-transform:uppercase;
+  }
+  p{margin:0 0 16px;color:var(--muted)}
+  p.lead{color:var(--ink);font-size:17px}
+  .next{
+    text-align:left;background:var(--blue-soft);border-radius:16px;
+    padding:20px 22px;margin:26px 0 28px;
+  }
+  .next h2{
+    font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;
+    font-size:14px;color:var(--blue);margin:0 0 10px;
+  }
+  .next ol{margin:0;padding-left:20px;color:var(--muted)}
+  .next li{margin-bottom:8px}
+  .next li:last-child{margin-bottom:0}
+  .btn{
+    display:inline-block;background:var(--red);color:var(--white);text-decoration:none;
+    font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:15px;
+    padding:14px 30px;border-radius:999px;transition:background .18s ease;
+  }
+  .btn:hover,.btn:focus-visible{background:#b40500}
+  .ref{
+    margin:24px 0 0;font-size:13px;color:var(--muted);
+    word-break:break-all;font-variant-numeric:tabular-nums;
+  }
+  .ref code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+  a{color:var(--blue)}
+  @media (max-width:480px){.card{padding:34px 22px}}
+</style>
+</head>
+<body>
+  <main class="card">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+
+    <p class="eyebrow">Payment received</p>
+    <h1>Welcome to the Club</h1>
+
+    <p class="lead">
+      Thank you for backing your local high school programs. Your sponsorship is
+      confirmed and your receipt is on its way to the email address you used at checkout.
+    </p>
+
+    <div class="next">
+      <h2>What happens next</h2>
+      <ol>
+        <li>We will reach out within two business days to schedule your onboarding call.</li>
+        <li>We will collect your logo, links and anything else your package needs.</li>
+        <li>Your deliverables are scheduled across the year and tracked from day one.</li>
+      </ol>
+    </div>
+
+    <a class="btn" href="/">Back to The Shamrock Club</a>
+
+    <p class="ref" id="ref" hidden>
+      Reference: <code id="ref-id"></code>
+    </p>
+  </main>
+
+<script>
+  // Shown only so a sponsor can quote it to us; the payment itself is confirmed
+  // by Stripe's webhook, never by this page.
+  (function () {
+    try {
+      var id = new URLSearchParams(window.location.search).get('session_id');
+      if (id && /^cs_[A-Za-z0-9_]+$/.test(id)) {
+        document.getElementById('ref-id').textContent = id;
+        document.getElementById('ref').hidden = false;
+      }
+    } catch (err) { /* the page reads fine without a reference */ }
+  })();
+</script>
+</body>
+</html>
