@@ -11,3 +11,9 @@
 # pulled into the Client Deliverables Hub on a schedule instead.
 [functions."sync-approved"]
   schedule = "*/15 * * * *"
+
+# Short, sendable payment link: /pay?client=recXXXXXXXXXXXXXX
+[[redirects]]
+  from = "/pay"
+  to = "/.netlify/functions/stripe-checkout"
+  status = 200
