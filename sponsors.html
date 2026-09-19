@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Our Sponsors — The Shamrock Club</title>
+<meta name="description" content="The local businesses backing high school programs across Ventura County through The Shamrock Club.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#f7f8fc}
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────────────────────────────────────────────────────
+     SPONSOR DIRECTORY — portable block.
+
+     To put this on another site, copy everything between this comment and
+     the matching "END SPONSOR DIRECTORY" one: the <style>, the <section>
+     and the <script>. Nothing else on this page matters.
+
+     Every style is scoped under .shamrock-directory, so it cannot collide
+     with the host site's CSS. Set data-endpoint on the section if the
+     functions live on a different domain than the page.
+     ─────────────────────────────────────────────────────────────────── -->
+
+<style>
+  .shamrock-directory{
+    --sd-blue:#17115a;--sd-blue-soft:#f1f2ff;--sd-red:#e10600;--sd-white:#fff;
+    --sd-ink:#17142b;--sd-muted:#676879;--sd-line:#e4e5ee;--sd-gold:#d5b24a;
+    --sd-display:"Oswald",sans-serif;--sd-body:"DM Sans",sans-serif;
+    box-sizing:border-box;max-width:1180px;margin:0 auto;padding:64px 16px 80px;
+    font:16px/1.65 var(--sd-body),system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--sd-ink);
+  }
+  .shamrock-directory *,.shamrock-directory *::before,.shamrock-directory *::after{box-sizing:inherit}
+
+  .sd-head{text-align:center;max-width:680px;margin:0 auto 52px}
+  .sd-eyebrow{
+    font-family:var(--sd-display);text-transform:uppercase;letter-spacing:.16em;
+    font-size:13px;color:var(--sd-gold);margin:0 0 12px;
+  }
+  .sd-head h2{
+    font-family:var(--sd-display);font-weight:700;text-transform:uppercase;
+    font-size:clamp(28px,5vw,42px);line-height:1.1;margin:0 0 14px;color:var(--sd-blue);
+  }
+  .sd-head p{margin:0;color:var(--sd-muted);font-size:17px}
+
+  .sd-tier{margin-bottom:52px}
+  .sd-tier:last-child{margin-bottom:0}
+  .sd-tier-head{display:flex;align-items:center;gap:14px;margin:0 0 22px}
+  .sd-tier-head h3{
+    font-family:var(--sd-display);text-transform:uppercase;letter-spacing:.08em;
+    font-size:15px;margin:0;color:var(--sd-blue);white-space:nowrap;
+  }
+  .sd-rule{flex:1;height:1px;background:var(--sd-line)}
+  .sd-count{
+    font-size:12px;color:var(--sd-muted);font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+
+  /* Wrapping centred rows rather than a grid: a tier with one sponsor reads as
+     deliberate instead of leaving a lone card stranded in an empty row. */
+  .sd-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:18px}
+
+  .sd-card{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:12px;flex:0 1 210px;min-height:168px;padding:24px 18px;
+    background:var(--sd-white);border:1px solid var(--sd-line);border-radius:18px;
+    text-decoration:none;color:inherit;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+  }
+
+  /* Card size carries the tier, so what a sponsor paid for is visible at a glance. */
+  .sd-tier--district-champion .sd-card{flex-basis:320px;min-height:224px;padding:30px 24px}
+  .sd-tier--district-champion .sd-logo{max-height:92px}
+  .sd-tier--district-champion .sd-name{font-size:19px}
+
+  .sd-tier--district-leader .sd-card{flex-basis:290px;min-height:206px;padding:28px 22px}
+  .sd-tier--district-leader .sd-logo{max-height:82px}
+  .sd-tier--district-leader .sd-name{font-size:18px}
+
+  .sd-tier--district-partner .sd-card{flex-basis:265px;min-height:194px;padding:26px 20px}
+  .sd-tier--district-partner .sd-logo{max-height:76px}
+  .sd-tier--district-partner .sd-name{font-size:17px}
+
+  .sd-tier--gold .sd-card{flex-basis:235px;min-height:180px}
+  .sd-tier--bronze .sd-card{flex-basis:195px;min-height:158px}
+  .sd-tier--bronze .sd-name{font-size:15px}
+  a.sd-card:hover,a.sd-card:focus-visible{
+    transform:translateY(-3px);border-color:#cfd2e6;
+    box-shadow:0 14px 34px rgba(17,11,68,.10);
+  }
+  a.sd-card:focus-visible{outline:2px solid var(--sd-blue);outline-offset:3px}
+
+  .sd-logo{max-width:100%;max-height:68px;width:auto;height:auto;object-fit:contain}
+  .sd-name{
+    font-family:var(--sd-display);text-transform:uppercase;letter-spacing:.03em;
+    font-size:16px;line-height:1.25;color:var(--sd-blue);
+  }
+  .sd-schools{font-size:12.5px;color:var(--sd-muted);line-height:1.45}
+
+  .sd-note{
+    margin:0;padding:52px 20px;text-align:center;color:var(--sd-muted);
+    background:var(--sd-blue-soft);border-radius:18px;
+  }
+  .sd-note strong{display:block;color:var(--sd-blue);font-size:17px;margin-bottom:6px}
+
+  .sd-cta{
+    margin-top:56px;padding-top:36px;border-top:1px solid var(--sd-line);text-align:center;
+  }
+  .sd-cta p{margin:0 0 18px;color:var(--sd-muted)}
+  .sd-btn{
+    display:inline-block;background:var(--sd-red);color:var(--sd-white);text-decoration:none;
+    font-family:var(--sd-display);text-transform:uppercase;letter-spacing:.08em;font-size:15px;
+    padding:14px 30px;border-radius:999px;transition:background .18s ease;
+  }
+  .sd-btn:hover,.sd-btn:focus-visible{background:#b40500}
+
+  @media (max-width:520px){
+    .shamrock-directory{padding:44px 16px 60px}
+    .sd-grid{gap:14px}
+    /* One consistent width on a phone; tier is already clear from the heading. */
+    .shamrock-directory .sd-card{flex:1 1 140px;max-width:none;min-height:150px;padding:20px 14px}
+    .shamrock-directory .sd-logo{max-height:56px}
+    .shamrock-directory .sd-name{font-size:15px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .sd-card{transition:none}
+    a.sd-card:hover,a.sd-card:focus-visible{transform:none}
+  }
+</style>
+
+<section class="shamrock-directory" id="shamrock-directory"
+         data-endpoint="/.netlify/functions/sponsors"
+         data-apply-url="/application-form.html">
+  <div class="sd-head">
+    <p class="sd-eyebrow">The Shamrock Club</p>
+    <h2>Businesses Backing Our Students</h2>
+    <p>Every business here funds programs at a local high school. When you support them, you support the students they sponsor.</p>
+  </div>
+
+  <div id="sd-body">
+    <p class="sd-note"><strong>Loading our sponsors…</strong>One moment.</p>
+  </div>
+
+  <div class="sd-cta">
+    <p>Want your business on this page?</p>
+    <a class="sd-btn" id="sd-apply" href="/application-form.html">Become a sponsor</a>
+  </div>
+</section>
+
+<script>
+(function () {
+  var root = document.getElementById('shamrock-directory');
+  if (!root) return;
+
+  var body = document.getElementById('sd-body');
+  var endpoint = root.getAttribute('data-endpoint') || '/.netlify/functions/sponsors';
+  var applyUrl = root.getAttribute('data-apply-url');
+  if (applyUrl) document.getElementById('sd-apply').setAttribute('href', applyUrl);
+
+  function note(title, detail) {
+    var p = document.createElement('p');
+    p.className = 'sd-note';
+    var strong = document.createElement('strong');
+    strong.textContent = title;
+    p.appendChild(strong);
+    // textContent throughout: business names are supplied by applicants, so
+    // they are never treated as markup.
+    p.appendChild(document.createTextNode(detail));
+    body.replaceChildren(p);
+  }
+
+  function card(sponsor) {
+    var el = document.createElement(sponsor.website ? 'a' : 'div');
+    el.className = 'sd-card';
+    if (sponsor.website) {
+      el.setAttribute('href', sponsor.website);
+      el.setAttribute('target', '_blank');
+      // noopener stops the opened tab reaching back into this page.
+      el.setAttribute('rel', 'noopener noreferrer');
+    }
+
+    if (sponsor.logo) {
+      var img = document.createElement('img');
+      img.className = 'sd-logo';
+      img.setAttribute('src', sponsor.logo);
+      img.setAttribute('alt', sponsor.name);
+      img.setAttribute('loading', 'lazy');
+      img.setAttribute('decoding', 'async');
+      // A broken logo falls back to the name rather than an empty card.
+      img.addEventListener('error', function () {
+        var name = document.createElement('span');
+        name.className = 'sd-name';
+        name.textContent = sponsor.name;
+        img.replaceWith(name);
+      });
+      el.appendChild(img);
+    } else {
+      var name = document.createElement('span');
+      name.className = 'sd-name';
+      name.textContent = sponsor.name;
+      el.appendChild(name);
+    }
+
+    if (sponsor.schools) {
+      var schools = document.createElement('span');
+      schools.className = 'sd-schools';
+      schools.textContent = sponsor.schools;
+      el.appendChild(schools);
+    }
+    return el;
+  }
+
+  function render(sponsors) {
+    if (!sponsors.length) {
+      note('Our first sponsors are on their way.',
+        'This page fills up as businesses join the Club.');
+      return;
+    }
+
+    // The endpoint already sorts by tier then name, so grouping in order works.
+    var groups = [];
+    var byTier = {};
+    sponsors.forEach(function (s) {
+      var tier = s.tier || 'Supporters';
+      if (!byTier[tier]) { byTier[tier] = []; groups.push(tier); }
+      byTier[tier].push(s);
+    });
+
+    var frag = document.createDocumentFragment();
+    groups.forEach(function (tier) {
+      var members = byTier[tier];
+
+      var slug = tier.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+      var section = document.createElement('div');
+      section.className = 'sd-tier' + (slug ? ' sd-tier--' + slug : '');
+
+      var head = document.createElement('div');
+      head.className = 'sd-tier-head';
+      var h3 = document.createElement('h3');
+      h3.textContent = tier;
+      var rule = document.createElement('span');
+      rule.className = 'sd-rule';
+      var count = document.createElement('span');
+      count.className = 'sd-count';
+      count.textContent = members.length + (members.length === 1 ? ' sponsor' : ' sponsors');
+      head.append(h3, rule, count);
+
+      var grid = document.createElement('div');
+      grid.className = 'sd-grid';
+      members.forEach(function (s) { grid.appendChild(card(s)); });
+
+      section.append(head, grid);
+      frag.appendChild(section);
+    });
+
+    body.replaceChildren(frag);
+  }
+
+  fetch(endpoint, { headers: { Accept: 'application/json' } })
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function (data) {
+      render(Array.isArray(data.sponsors) ? data.sponsors : []);
+    })
+    .catch(function (err) {
+      console.error('Sponsor directory could not load:', err);
+      note('We could not load our sponsors just now.',
+        'Please refresh in a moment — they are still very much appreciated.');
+    });
+})();
+</script>
+
+<!-- ─────────────────────── END SPONSOR DIRECTORY ─────────────────────── -->
+
+</body>
+</html>
