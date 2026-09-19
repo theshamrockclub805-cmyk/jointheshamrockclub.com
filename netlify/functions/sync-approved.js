@@ -56,23 +56,45 @@ async function airtable(token, path, options) {
   return res.json();
 }
 
+var REQUIRED_CHECKS = [
+  'Check 1: Real and operating',
+  'Check 2: Licensed or registered',
+  'Check 3: Appropriate for a high school audience',
+  'Check 4: Contact can commit the business',
+  'Check 5: Reputation clear',
+  'Check 6: School and category available'
+];
+
+/** Airtable returns a single select as a plain string or as {id, name}. */
+function selectName(value) {
+  return value && typeof value === 'object' ? value.name : value;
+}
+
 /**
- * An approved application may only become a Client once its legitimacy checks
- * have actually passed. Both the status and the five checks are tested: a
- * status flipped to Passed over an unfinished checklist is not enough, which
- * mirrors what the Ready to Approve field shows the reviewer.
+ * An approved application may only become a Client once both gates have
+ * actually cleared: the business is legitimate, and the school and category it
+ * is being given are free.
+ *
+ * The status and every check are tested independently, so a status flipped to
+ * Passed over an unfinished checklist is not enough. Confirmed Category and
+ * Assigned Schools must be filled too, because check 6 means nothing without
+ * them — it claims a specific trade is free at specific schools.
+ *
+ * This mirrors the Ready to Approve field, so the base and the code can never
+ * disagree about whether an application is releasable.
  */
 function isVerified(app) {
   var f = app.fields || {};
-  var status = f['Verification Status'];
-  var statusName = status && typeof status === 'object' ? status.name : status;
 
-  return statusName === 'Passed' &&
-    f['Check 1: Real and operating'] === true &&
-    f['Check 2: Licensed or registered'] === true &&
-    f['Check 3: Appropriate for a high school audience'] === true &&
-    f['Check 4: Contact can commit the business'] === true &&
-    f['Check 5: Reputation clear'] === true;
+  if (selectName(f['Verification Status']) !== 'Passed') return false;
+  if (!selectName(f['Confirmed Category'])) return false;
+
+  var schools = f['Assigned Schools'];
+  if (!Array.isArray(schools) || schools.length === 0) return false;
+
+  return REQUIRED_CHECKS.every(function (check) {
+    return f[check] === true;
+  });
 }
 
 /** Applications that are approved and have not been pushed across yet. */
@@ -106,7 +128,11 @@ function clientFieldsFrom(app, packagesByName) {
   };
 
   if (f['Phone']) fields['Phone Number'] = f['Phone'];
-  if (f['Preferred School or Program']) fields['Sponsored School(s)'] = f['Preferred School or Program'];
+  // Assigned Schools is what the reviewer confirmed is available; Preferred
+  // School or Program is only what the applicant asked for.
+  var assigned = Array.isArray(f['Assigned Schools']) ? f['Assigned Schools'].join(', ') : '';
+  var schools = assigned || f['Preferred School or Program'];
+  if (schools) fields['Sponsored School(s)'] = schools;
 
   var pkg = f['Selected Package'];
   var pkgName = pkg && typeof pkg === 'object' ? pkg.name : pkg;
@@ -229,4 +255,4 @@ exports.handler = async function () {
   }
 };
 
-exports._internals = { clientFieldsFrom: clientFieldsFrom, env: env, isVerified: isVerified };
+exports._internals = { clientFieldsFrom: clientFieldsFrom, env: env, isVerified: isVerified, REQUIRED_CHECKS: REQUIRED_CHECKS };
