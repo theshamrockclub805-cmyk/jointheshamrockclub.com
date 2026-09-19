@@ -12,6 +12,10 @@
  * The Client is created as Onboarding / Awaiting payment. Recording the
  * payment in Airtable is what triggers deliverable generation.
  *
+ * Approval alone is not enough to cross this line: the application's business
+ * verification must have passed as well. An approved but unverified applicant
+ * is held back and named in the logs until its checks are finished.
+ *
  * Required environment variables:
  *   AIRTABLE_TOKEN   must have data.records:read + write on BOTH bases
  * Optional (default to the current IDs):
@@ -50,6 +54,25 @@ async function airtable(token, path, options) {
     throw new Error('Airtable ' + res.status + ' on ' + path + ': ' + detail.slice(0, 300));
   }
   return res.json();
+}
+
+/**
+ * An approved application may only become a Client once its legitimacy checks
+ * have actually passed. Both the status and the five checks are tested: a
+ * status flipped to Passed over an unfinished checklist is not enough, which
+ * mirrors what the Ready to Approve field shows the reviewer.
+ */
+function isVerified(app) {
+  var f = app.fields || {};
+  var status = f['Verification Status'];
+  var statusName = status && typeof status === 'object' ? status.name : status;
+
+  return statusName === 'Passed' &&
+    f['Check 1: Real and operating'] === true &&
+    f['Check 2: Licensed or registered'] === true &&
+    f['Check 3: Appropriate for a high school audience'] === true &&
+    f['Check 4: Contact can commit the business'] === true &&
+    f['Check 5: Reputation clear'] === true;
 }
 
 /** Applications that are approved and have not been pushed across yet. */
@@ -118,8 +141,25 @@ async function syncOnce() {
     return { ok: false, error: 'Airtable is not configured' };
   }
 
-  var approved = await findApproved(token);
-  if (approved.length === 0) return { ok: true, synced: 0 };
+  var all = await findApproved(token);
+  if (all.length === 0) return { ok: true, synced: 0 };
+
+  var approved = [];
+  var blocked = [];
+  all.forEach(function (app) {
+    (isVerified(app) ? approved : blocked).push(app);
+  });
+
+  // Silence here would look like a broken sync, so name what is being held back.
+  blocked.forEach(function (app) {
+    var name = (app.fields && (app.fields['Company Name'] || app.fields['Applicant Name'])) || app.id;
+    console.warn('Holding back "' + name + '" (' + app.id + '): approved, but business ' +
+      'verification has not passed. Finish the checks on the application to release it.');
+  });
+
+  if (approved.length === 0) {
+    return { ok: true, synced: 0, blockedByVerification: blocked.length };
+  }
 
   var packagesByName = await packageIdsByName(token);
   var synced = [];
@@ -161,7 +201,13 @@ async function syncOnce() {
     }
   }
 
-  return { ok: failed.length === 0, synced: synced.length, failed: failed.length, details: synced };
+  return {
+    ok: failed.length === 0,
+    synced: synced.length,
+    failed: failed.length,
+    blockedByVerification: blocked.length,
+    details: synced
+  };
 }
 
 exports.handler = async function () {
@@ -183,4 +229,4 @@ exports.handler = async function () {
   }
 };
 
-exports._internals = { clientFieldsFrom: clientFieldsFrom, env: env };
+exports._internals = { clientFieldsFrom: clientFieldsFrom, env: env, isVerified: isVerified };
