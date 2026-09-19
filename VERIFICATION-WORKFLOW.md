@@ -126,20 +126,33 @@ Then tick check 6. Never tick it on the applicant's say-so.
 do, every school reads "No capacity set" and the capacity half of the check
 tells you nothing.
 
-### The one manual step
+### What is automatic, and what is not
 
-The three bases cannot link to each other — Airtable has no cross-base links —
-so **Assigned Schools** is a list of school names, not a live link, and the
-availability lookup is something a person does rather than something the base
-computes. With nine schools that is a few seconds of scrolling; it is not worth
-the machinery to automate, and a human confirming a school is available before
-a $9,997 promise is arguably the right place for a human anyway.
+**Automatic.** When an approved application syncs, it is also written into the
+**Businesses** table as *Closed Won*, linked to its assigned schools and
+carrying its confirmed category. That record is what occupies the school's slot
+and blocks the category, so the next applicant in the same trade sees it. If
+the business is already in the outbound pipeline as a prospect — which is
+common, since a business you were already chasing may well apply — that record
+is advanced rather than duplicated, and its existing notes are kept.
 
-The consequence worth knowing: a sponsor who arrives through the application
-form does **not** automatically appear in the Businesses table, so they do not
-automatically occupy a slot or block their category. Add them to Businesses as
-Closed Won when you approve them, or the next applicant in that trade will look
-clear when they are not.
+The application stores the resulting id in **Sales Funnel Record**, so all
+three bases can be traced to each other.
+
+**Not automatic.** The availability *lookup* is still a person's job: the three
+bases cannot link to each other, so **Assigned Schools** is a list of names
+rather than a live link, and nothing computes check 6 for you. With ten schools
+that is a few seconds of scrolling — and a human confirming a school is free
+before a $9,997 promise is arguably where a human belongs.
+
+### Order of operations
+
+The sync writes the slot **before** it creates the Client. The slot write is
+idempotent, so a later failure retries harmlessly; creating a Client twice
+would duplicate a sponsor. If the slot cannot be written — an unknown school
+name, a token that cannot reach the Sales Funnel base — the whole application
+is held and retried next run, rather than creating a Client whose category
+nobody is blocking.
 
 ## Re-verify at renewal
 

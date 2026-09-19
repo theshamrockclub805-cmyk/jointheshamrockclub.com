@@ -16,8 +16,14 @@
  * verification must have passed as well. An approved but unverified applicant
  * is held back and named in the logs until its checks are finished.
  *
+ * Each approved applicant is also written into the Businesses table of the
+ * Sales Funnel base as Closed Won, which is what actually holds their school
+ * slot and blocks their category for the next applicant in the same trade.
+ *
  * Required environment variables:
- *   AIRTABLE_TOKEN   must have data.records:read + write on BOTH bases
+ *   AIRTABLE_TOKEN   must have data.records:read + write on ALL THREE bases:
+ *                    the Lead Follow-Up Funnel, the Client Deliverables Hub,
+ *                    and the Business Sales Funnel Manager
  * Optional (default to the current IDs):
  *   AIRTABLE_BASE_ID, AIRTABLE_APPLICATION_TABLE_ID,
  *   AIRTABLE_HUB_BASE_ID, AIRTABLE_HUB_CLIENTS_TABLE_ID,
@@ -37,6 +43,9 @@ function env(name) {
 
 var LEAD_BASE   = env('AIRTABLE_BASE_ID') || 'appiaYFwD340oK6uQ';
 var APPS_TABLE  = env('AIRTABLE_APPLICATION_TABLE_ID') || 'tbl79enOo6bpusR00';
+var SALES_BASE  = env('AIRTABLE_SALES_BASE_ID') || 'app6eNzSFWvGNwt33';
+var BUSINESSES_TBL = env('AIRTABLE_SALES_BUSINESSES_TABLE_ID') || 'tblGeTs8cOonu2J3F';
+var SCHOOLS_TBL = env('AIRTABLE_SALES_SCHOOLS_TABLE_ID') || 'tblVcza0S27DK9pkQ';
 var HUB_BASE    = env('AIRTABLE_HUB_BASE_ID') || 'appGG8camPZ04Tsz6';
 var CLIENTS_TBL = env('AIRTABLE_HUB_CLIENTS_TABLE_ID') || 'tblQTVkBcVnolpo0P';
 var PACKAGES_TBL= env('AIRTABLE_HUB_PACKAGES_TABLE_ID') || 'tblEiajhPxOQmlQ69';
@@ -117,6 +126,94 @@ async function packageIdsByName(token) {
   return byName;
 }
 
+/** Airtable formula strings are single-quoted, so a quote in a name must be escaped. */
+function quote(value) {
+  return "'" + String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+}
+
+/** Map the Sales Funnel base's school names to their record IDs. */
+async function schoolIdsByName(token) {
+  var data = await airtable(token, SALES_BASE + '/' + SCHOOLS_TBL + '?pageSize=100');
+  var byName = {};
+  (data.records || []).forEach(function (rec) {
+    var name = rec.fields && rec.fields['School Name'];
+    if (name) byName[String(name).trim().toLowerCase()] = rec.id;
+  });
+  return byName;
+}
+
+/**
+ * A sponsor who arrives through the application form is not in the Businesses
+ * table, so nothing would hold their school slot or block their category and
+ * the next applicant in the same trade would look clear when they are not.
+ *
+ * This writes them in as Closed Won. It matches on business name first,
+ * because an inbound applicant is often already in the outbound pipeline as a
+ * prospect — that record is advanced rather than duplicated.
+ *
+ * Idempotent by design: running it twice updates the same record. That is why
+ * it runs before the Client is created, which is not idempotent.
+ */
+async function recordSchoolSlot(token, app, schoolsByName) {
+  var f = app.fields || {};
+  var name = String(f['Company Name'] || f['Applicant Name'] || '').trim();
+  if (!name) throw new Error('application has no business name to register');
+
+  var assigned = Array.isArray(f['Assigned Schools']) ? f['Assigned Schools'] : [];
+  var schoolIds = assigned.map(function (schoolName) {
+    var id = schoolsByName[String(schoolName).trim().toLowerCase()];
+    // A school that cannot be resolved would silently leave its category
+    // unblocked, so this fails rather than registering a partial slot.
+    if (!id) throw new Error('no school named "' + schoolName + '" in the Sales Funnel base');
+    return id;
+  });
+
+  var category = f['Confirmed Category'];
+  var categoryName = category && typeof category === 'object' ? category.name : category;
+
+  var fields = {
+    'Business Name': name,
+    'Funnel Stage': 'Closed Won',
+    'Status': 'Active',
+    'School(s)': schoolIds
+  };
+  if (categoryName) fields['Category'] = categoryName;
+  if (f['Applicant Name']) fields['Contact Name'] = f['Applicant Name'];
+  if (f['Email']) fields['Contact Email'] = f['Email'];
+  if (f['Phone']) fields['Contact Phone'] = f['Phone'];
+
+  var formula = encodeURIComponent("LOWER({Business Name})=" + quote(name.toLowerCase()));
+  var found = await airtable(token,
+    SALES_BASE + '/' + BUSINESSES_TBL + '?maxRecords=1&filterByFormula=' + formula);
+  var existing = (found.records || [])[0];
+
+  if (existing) {
+    // Keep whatever the outbound team already wrote in Notes; just append.
+    var note = 'Closed via the sponsorship application form on ' +
+      new Date().toISOString().slice(0, 10) + ' (application ' + app.id + ').';
+    var priorNotes = (existing.fields && existing.fields['Notes']) || '';
+    fields['Notes'] = priorNotes ? priorNotes + '\n\n' + note : note;
+
+    await airtable(token, SALES_BASE + '/' + BUSINESSES_TBL, {
+      method: 'PATCH',
+      body: JSON.stringify({ records: [{ id: existing.id, fields: fields }], typecast: true })
+    });
+    return { id: existing.id, matchedExistingProspect: true };
+  }
+
+  fields['Notes'] = 'Created automatically from the approved sponsorship application ' +
+    app.id + '. Holds this sponsor\'s school slot and category exclusivity.';
+
+  var created = await airtable(token, SALES_BASE + '/' + BUSINESSES_TBL, {
+    method: 'POST',
+    body: JSON.stringify({ records: [{ fields: fields }], typecast: true })
+  });
+  return {
+    id: created.records && created.records[0] && created.records[0].id,
+    matchedExistingProspect: false
+  };
+}
+
 function clientFieldsFrom(app, packagesByName) {
   var f = app.fields || {};
   var fields = {
@@ -188,12 +285,17 @@ async function syncOnce() {
   }
 
   var packagesByName = await packageIdsByName(token);
+  var schoolsByName = await schoolIdsByName(token);
   var synced = [];
   var failed = [];
 
   for (var i = 0; i < approved.length; i++) {
     var app = approved[i];
     try {
+      // The slot goes first: it is idempotent, so a later failure can retry it
+      // harmlessly, whereas creating the Client twice would duplicate a sponsor.
+      var slot = await recordSchoolSlot(token, app, schoolsByName);
+
       var created = await airtable(token, HUB_BASE + '/' + CLIENTS_TBL, {
         method: 'POST',
         body: JSON.stringify({
@@ -213,6 +315,7 @@ async function syncOnce() {
             fields: {
               'Pushed to Deliverables Hub': true,
               'Hub Client Record': clientId || '',
+              'Sales Funnel Record': slot.id || '',
               'Pushed At': new Date().toISOString()
             }
           }],
@@ -220,7 +323,12 @@ async function syncOnce() {
         })
       });
 
-      synced.push({ application: app.id, client: clientId });
+      synced.push({
+        application: app.id,
+        client: clientId,
+        business: slot.id,
+        matchedExistingProspect: slot.matchedExistingProspect
+      });
     } catch (err) {
       console.error('Could not sync application ' + app.id + ': ' + err.message);
       failed.push(app.id);
@@ -255,4 +363,11 @@ exports.handler = async function () {
   }
 };
 
-exports._internals = { clientFieldsFrom: clientFieldsFrom, env: env, isVerified: isVerified, REQUIRED_CHECKS: REQUIRED_CHECKS };
+exports._internals = {
+  clientFieldsFrom: clientFieldsFrom,
+  env: env,
+  isVerified: isVerified,
+  recordSchoolSlot: recordSchoolSlot,
+  quote: quote,
+  REQUIRED_CHECKS: REQUIRED_CHECKS
+};

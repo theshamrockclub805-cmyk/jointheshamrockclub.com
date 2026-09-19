@@ -137,13 +137,18 @@ deliverable generation.
 
 ### Token scope
 
-`AIRTABLE_TOKEN` must now cover **both** bases:
+`AIRTABLE_TOKEN` must now cover **all three** bases:
 
-| Base | Needs |
-| --- | --- |
-| Lead Follow-Up Funnel | `data.records:read`, `data.records:write` |
-| Client Deliverables Hub | `data.records:read`, `data.records:write` |
+| Base | Needs | Why |
+| --- | --- | --- |
+| Lead Follow-Up Funnel | `data.records:read`, `data.records:write` | Where applications land, and where the sync stamps them. |
+| Client Deliverables Hub | `data.records:read`, `data.records:write` | Where the Client and its deliverables are created. |
+| Business Sales Funnel Manager | `data.records:read`, `data.records:write` | Where the sponsor's school slot and category exclusivity are held. |
 
-Add the Hub base to the existing token at <https://airtable.com/create/tokens>,
-or set `AIRTABLE_HUB_BASE_ID` and friends if you ever move bases. Until the
-token covers both, the sync logs a clear Airtable 403 and changes nothing.
+Add the missing bases to the existing token at
+<https://airtable.com/create/tokens>, or set `AIRTABLE_HUB_BASE_ID`,
+`AIRTABLE_SALES_BASE_ID` and friends if you ever move bases.
+
+Until the token reaches all three, the sync logs a clear Airtable 403 and
+changes nothing — it will not create a Client whose school slot it could not
+also record.
