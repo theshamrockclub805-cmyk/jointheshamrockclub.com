@@ -30,6 +30,9 @@
  *   AIRTABLE_HUB_PACKAGES_TABLE_ID
  */
 
+var mailer = require('../lib/mailer');
+var emails = require('../lib/emails');
+
 function env(name) {
   var value = process.env[name];
   if (value === undefined) {
@@ -257,6 +260,55 @@ function clientFieldsFrom(app, packagesByName) {
   return fields;
 }
 
+/**
+ * Email the applicant their approval and payment link.
+ *
+ * Guarded by Approval Email Sent At so nobody is ever asked to pay twice, and
+ * stamped only after the send actually succeeds, so a failure retries next run
+ * rather than going quiet.
+ */
+async function sendApprovalEmail(token, app, clientId) {
+  var f = app.fields || {};
+  if (f['Approval Email Sent At']) return false;
+
+  var email = f['Email'];
+  if (!email) {
+    console.warn('Application ' + app.id + ' has no email address; approval not sent.');
+    return false;
+  }
+  if (!clientId) return false;
+
+  var pkg = f['Selected Package'];
+  var category = f['Confirmed Category'];
+  var schools = Array.isArray(f['Assigned Schools']) ? f['Assigned Schools'].join(', ') : '';
+
+  var sent = await mailer.send(emails.approvedWithPaymentLink({
+    email: email,
+    contactName: f['Applicant Name'],
+    businessName: f['Company Name'] || f['Applicant Name'],
+    packageName: selectName(pkg) || '',
+    amount: f['Annual Sponsorship Amount'],
+    schools: schools,
+    category: selectName(category) || '',
+    paymentUrl: mailer.SITE_URL + '/pay?client=' + clientId
+  }));
+
+  if (!sent.sent) return false;
+
+  try {
+    await airtable(token, LEAD_BASE + '/' + APPS_TABLE, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        records: [{ id: app.id, fields: { 'Approval Email Sent At': new Date().toISOString() } }]
+      })
+    });
+  } catch (err) {
+    // Worst case this sends twice; better than never recording it at all.
+    console.error('Approval email sent but could not be stamped on ' + app.id + ': ' + err.message);
+  }
+  return true;
+}
+
 async function syncOnce() {
   var token = env('AIRTABLE_TOKEN');
   if (!token) {
@@ -323,11 +375,17 @@ async function syncOnce() {
         })
       });
 
+      // The payment link only exists once the Client does, so the approval
+      // email goes last. It is best-effort: the sponsor is already set up, and
+      // an email failure must not undo that or block the next application.
+      var emailed = await sendApprovalEmail(token, app, clientId);
+
       synced.push({
         application: app.id,
         client: clientId,
         business: slot.id,
-        matchedExistingProspect: slot.matchedExistingProspect
+        matchedExistingProspect: slot.matchedExistingProspect,
+        approvalEmailed: emailed
       });
     } catch (err) {
       console.error('Could not sync application ' + app.id + ': ' + err.message);
@@ -364,6 +422,7 @@ exports.handler = async function () {
 };
 
 exports._internals = {
+  sendApprovalEmail: sendApprovalEmail,
   clientFieldsFrom: clientFieldsFrom,
   env: env,
   isVerified: isVerified,

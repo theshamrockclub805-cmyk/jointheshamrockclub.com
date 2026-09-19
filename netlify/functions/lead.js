@@ -29,6 +29,9 @@ function env(name) {
   return typeof value === 'string' ? value.trim() : value;
 }
 
+var mailer = require('../lib/mailer');
+var emails = require('../lib/emails');
+
 var BASE_ID = env('AIRTABLE_BASE_ID') || 'appiaYFwD340oK6uQ';
 var INQUIRY_TABLE = env('AIRTABLE_INQUIRY_TABLE_ID') || 'tblOuamBk2lzzGTCb';
 var APPLICATION_TABLE = env('AIRTABLE_APPLICATION_TABLE_ID') || 'tbl79enOo6bpusR00';
@@ -307,8 +310,43 @@ exports.handler = async function (event) {
   }
 
   var result = await response.json();
-  return json(200, { ok: true, id: result.records && result.records[0] && result.records[0].id });
+  var recordId = result.records && result.records[0] && result.records[0].id;
+
+  // Confirming an application is worth doing, but it is not worth failing the
+  // submission over: they have applied either way. Everything below is
+  // best-effort and already swallows its own errors.
+  if (formType === 'application') {
+    var pkg = PACKAGES[clean(data.tier, 40)] || PACKAGES['undecided'];
+    var sent = await mailer.send(emails.applicationReceived({
+      email: email,
+      contactName: clean(data.contactName, 200),
+      businessName: clean(data.bizName, 200),
+      packageName: pkg.label,
+      school: clean(data.school, 300)
+    }));
+
+    if (sent.sent && recordId) {
+      await stampConfirmation(token, recordId);
+    }
+  }
+
+  return json(200, { ok: true, id: recordId });
 };
+
+/** Record that the applicant was confirmed, so the team can see it happened. */
+async function stampConfirmation(token, recordId) {
+  try {
+    await fetch('https://api.airtable.com/v0/' + BASE_ID + '/' + APPLICATION_TABLE, {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        records: [{ id: recordId, fields: { 'Confirmation Email Sent At': new Date().toISOString() } }]
+      })
+    });
+  } catch (err) {
+    console.error('Could not stamp the confirmation email time: ' + err.message);
+  }
+}
 
 // Exported for local testing.
 exports._internals = {

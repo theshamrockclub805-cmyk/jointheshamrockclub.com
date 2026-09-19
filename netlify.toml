@@ -12,6 +12,11 @@
 [functions."sync-approved"]
   schedule = "*/15 * * * *"
 
+# Sponsors are welcomed once their payment lands, whether they paid by card,
+# cash or cheque. Offset from the approval sync so the two do not collide.
+[functions."send-welcome"]
+  schedule = "7,22,37,52 * * * *"
+
 # Short, sendable payment link: /pay?client=recXXXXXXXXXXXXXX
 [[redirects]]
   from = "/pay"
