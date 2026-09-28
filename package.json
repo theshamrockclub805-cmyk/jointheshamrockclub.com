@@ -1,0 +1,7 @@
+{
+  "name": "shamrock-club-site",
+  "private": true,
+  "dependencies": {
+    "stripe": "^22.6.2"
+  }
+}
