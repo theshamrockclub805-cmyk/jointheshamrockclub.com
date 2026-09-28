@@ -18,22 +18,14 @@
   schedule = "7,22,37,52 * * * *"
 
 # Short, sendable payment link: /pay?client=recXXXXXXXXXXXXXX
-[[redirects]]
-  from = "/pay"
-  to = "/.netlify/functions/stripe-checkout"
-  status = 200
-# Merge these into your existing netlify.toml if you already have one.
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-
+# Shows the annual/monthly chooser, then sends the sponsor to Stripe Checkout.
 [[redirects]]
   from = "/pay"
   to = "/.netlify/functions/pay"
   status = 200
   force = true
 
+# Stripe sends payment events here; the function writes them to Airtable.
 [[redirects]]
   from = "/api/stripe-webhook"
   to = "/.netlify/functions/stripe-webhook"
