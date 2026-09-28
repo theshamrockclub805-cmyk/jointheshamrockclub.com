@@ -22,3 +22,20 @@
   from = "/pay"
   to = "/.netlify/functions/stripe-checkout"
   status = 200
+# Merge these into your existing netlify.toml if you already have one.
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/pay"
+  to = "/.netlify/functions/pay"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/stripe-webhook"
+  to = "/.netlify/functions/stripe-webhook"
+  status = 200
+  force = true
