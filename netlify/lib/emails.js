@@ -86,7 +86,10 @@ function approvedWithPaymentLink(data) {
     blocks: blocks.concat([
       { text: 'Your category is held for you at that school for the sponsorship year, which means no competing ' +
               'business in the same trade can sponsor alongside you there.' }
-    ]),
+    ]).concat(/^(bronze|silver|gold)\b/i.test(data.packageName || '') ? [
+      { text: 'When you click below you can pay for the year up front (two months free), or choose 12 monthly ' +
+              'payments instead. Monthly plans stop automatically after the 12th payment.' }
+    ] : []),
     ctaUrl: data.paymentUrl,
     ctaLabel: 'Complete your sponsorship',
     footerNote: 'Paying by cheque or cash instead? Reply to this email and we will sort it out. ' +

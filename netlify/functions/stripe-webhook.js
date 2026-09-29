@@ -1,239 +1,205 @@
-'use strict';
+// POST /api/stripe-webhook
+//
+// Stripe calls this after payment events. It writes the result onto the
+// sponsor's row in Airtable (Client Deliverables Hub > Clients).
+//
+// Setting Payment Status to Paid is what triggers the deliverable automations,
+// so this function only ever sets Paid once per sponsor. Monthly billing
+// problems go in the separate "Monthly Billing Status" field instead, so a
+// failed-then-recovered card can't create duplicate tasks.
+//
+// Everything here is safe to run twice: Stripe re-sends events, and payment
+// counts are recounted from Stripe rather than incremented.
 
-/**
- * Records Stripe payments against the Client in the Deliverables Hub.
- *
- * Marking a Client "Paid" is what releases their deliverables, so this is the
- * only thing standing between a sponsor paying and the work being scheduled.
- * Every request is checked against Stripe's signature before it is trusted —
- * the endpoint is public, so an unsigned request means nothing.
- *
- * Point a Stripe webhook endpoint at:
- *   https://jointheshamrockclub.com/.netlify/functions/stripe-webhook
- * subscribed to: checkout.session.completed,
- *                checkout.session.async_payment_succeeded,
- *                charge.refunded
- *
- * Required environment variables:
- *   STRIPE_WEBHOOK_SECRET  Signing secret for that endpoint (whsec_...)
- *   AIRTABLE_TOKEN         Token with read + write on the Hub base
- * Optional (these default to the current values):
- *   AIRTABLE_HUB_BASE_ID, AIRTABLE_HUB_CLIENTS_TABLE_ID
- */
+const {
+  env, stripe, TABLES, CLIENT, getRecord, updateRecord, findOne, todayPacific,
+} = require('../lib/shared');
 
-var crypto = require('crypto');
+const DEFAULT_COMMITMENT = 12;
+const CAN_BECOME_PAID = new Set([undefined, '', 'Awaiting payment', 'Partially paid']);
 
-function env(name) {
-  var value = process.env[name];
-  if (value === undefined) {
-    var match = Object.keys(process.env).find(function (key) {
-      return key.toLowerCase() === name.toLowerCase();
-    });
-    if (match) value = process.env[match];
-  }
-  return typeof value === 'string' ? value.trim() : value;
-}
-
-var HUB_BASE    = env('AIRTABLE_HUB_BASE_ID') || 'appGG8camPZ04Tsz6';
-var CLIENTS_TBL = env('AIRTABLE_HUB_CLIENTS_TABLE_ID') || 'tblQTVkBcVnolpo0P';
-var AIRTABLE_API = 'https://api.airtable.com/v0/';
-var TZ = 'America/Los_Angeles';
-
-// How far out of date a signature may be, in seconds. Stripe's own default.
-var TOLERANCE_SECONDS = 300;
-
-/**
- * Verify Stripe's Stripe-Signature header against the exact bytes we received.
- * Returns the parsed event, or throws if the request cannot be trusted.
- */
-function verify(rawBody, signatureHeader, secret, nowSeconds) {
-  if (!signatureHeader) throw new Error('missing signature header');
-
-  var timestamp = null;
-  var signatures = [];
-  String(signatureHeader).split(',').forEach(function (part) {
-    var pair = part.trim().split('=');
-    if (pair[0] === 't') timestamp = pair[1];
-    if (pair[0] === 'v1') signatures.push(pair[1]);
-  });
-
-  if (!timestamp || signatures.length === 0) throw new Error('malformed signature header');
-
-  var age = Math.abs(nowSeconds - Number(timestamp));
-  if (!Number.isFinite(age) || age > TOLERANCE_SECONDS) throw new Error('signature timestamp outside tolerance');
-
-  var expected = crypto.createHmac('sha256', secret)
-    .update(timestamp + '.' + rawBody, 'utf8')
-    .digest('hex');
-  var expectedBuf = Buffer.from(expected, 'utf8');
-
-  var matched = signatures.some(function (candidate) {
-    var candidateBuf = Buffer.from(candidate, 'utf8');
-    return candidateBuf.length === expectedBuf.length &&
-      crypto.timingSafeEqual(candidateBuf, expectedBuf);
-  });
-  if (!matched) throw new Error('signature mismatch');
-
-  return JSON.parse(rawBody);
-}
-
-/** Today's date in Pacific time as YYYY-MM-DD, which is what Airtable date fields want. */
-function pacificDate(date) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(date);
-}
-
-async function airtable(token, path, options) {
-  var res = await fetch(AIRTABLE_API + path, Object.assign({
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-  }, options || {}));
-  if (!res.ok) {
-    var detail = await res.text();
-    throw new Error('Airtable ' + res.status + ' on ' + path + ': ' + detail.slice(0, 300));
-  }
-  return res.json();
-}
-
-async function patchClient(token, clientId, fields) {
-  return airtable(token, HUB_BASE + '/' + CLIENTS_TBL, {
-    method: 'PATCH',
-    body: JSON.stringify({ records: [{ id: clientId, fields: fields }], typecast: true })
-  });
-}
-
-/** Find the Client a refunded charge belongs to, by the payment we stored. */
-async function clientByPaymentId(token, paymentId) {
-  var formula = encodeURIComponent("{Stripe Payment ID}='" + String(paymentId).replace(/'/g, "") + "'");
-  var data = await airtable(token, HUB_BASE + '/' + CLIENTS_TBL + '?maxRecords=1&filterByFormula=' + formula);
-  return (data.records || [])[0] || null;
-}
-
-async function handlePaid(token, session) {
-  var clientId = session.client_reference_id ||
-    (session.metadata && session.metadata.airtable_client_id);
-  if (!clientId) {
-    console.error('Stripe session ' + session.id + ' carried no Airtable client id; nothing to update.');
-    return { handled: false, reason: 'no client id on session' };
-  }
-
-  var paymentId = session.payment_intent || session.id;
-
-  var existing;
-  try {
-    existing = await airtable(token, HUB_BASE + '/' + CLIENTS_TBL + '/' + clientId);
-  } catch (err) {
-    console.error('Stripe session ' + session.id + ' points at missing client ' + clientId);
-    return { handled: false, reason: 'client not found' };
-  }
-
-  var fields = existing.fields || {};
-  // Stripe retries until it gets a 200, so the same payment can arrive twice.
-  if (fields['Payment Status'] === 'Paid' && fields['Stripe Payment ID'] === paymentId) {
-    return { handled: true, alreadyRecorded: true, client: clientId };
-  }
-
-  var today = pacificDate(new Date());
-  var update = {
-    'Payment Status': 'Paid',
-    'Payment Method': 'Stripe',
-    'Amount Paid': (session.amount_total || 0) / 100,
-    'Payment Date': today,
-    'Client Status': 'Active',
-    'Stripe Payment ID': paymentId
-  };
-
-  // Deliverable deadlines are all counted from the start date, so it is set
-  // once, on the first payment, and never moved by a later one.
-  if (!fields['Sponsorship Start Date']) update['Sponsorship Start Date'] = today;
-
-  await patchClient(token, clientId, update);
-  console.log('Recorded Stripe payment ' + paymentId + ' against client ' + clientId);
-  return { handled: true, client: clientId, amount: update['Amount Paid'] };
-}
-
-async function handleRefund(token, charge) {
-  var paymentId = charge.payment_intent;
-  var clientId = charge.metadata && charge.metadata.airtable_client_id;
-
-  if (!clientId && paymentId) {
-    var found = await clientByPaymentId(token, paymentId);
-    if (found) clientId = found.id;
-  }
-  if (!clientId) {
-    console.error('Refunded charge ' + charge.id + ' could not be matched to a client.');
-    return { handled: false, reason: 'no matching client' };
-  }
-
-  var fullyRefunded = charge.amount_refunded >= charge.amount;
-  await patchClient(token, clientId, {
-    'Payment Status': fullyRefunded ? 'Refunded' : 'Partially paid',
-    'Amount Paid': (charge.amount - charge.amount_refunded) / 100
-  });
-  console.log('Recorded a ' + (fullyRefunded ? 'full' : 'partial') + ' refund on client ' + clientId);
-  return { handled: true, client: clientId, fullyRefunded: fullyRefunded };
-}
-
-function json(statusCode, payload) {
-  return {
-    statusCode: statusCode,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    body: JSON.stringify(payload)
-  };
-}
-
-exports.handler = async function (event) {
-  if (event.httpMethod !== 'POST') return json(405, { ok: false, error: 'Method not allowed' });
-
-  var secret = env('STRIPE_WEBHOOK_SECRET');
-  var token = env('AIRTABLE_TOKEN');
-  if (!secret || !token) {
-    console.error('Stripe webhook is missing configuration:',
-      'STRIPE_WEBHOOK_SECRET set =', Boolean(secret), '; AIRTABLE_TOKEN set =', Boolean(token));
-    return json(503, { ok: false, error: 'Webhook is not configured' });
-  }
-
-  // The signature covers the exact bytes Stripe sent, so verify before parsing.
-  var rawBody = event.isBase64Encoded
-    ? Buffer.from(event.body || '', 'base64').toString('utf8')
-    : (event.body || '');
-
-  var headers = event.headers || {};
-  var signature = headers['stripe-signature'] || headers['Stripe-Signature'];
-
-  var stripeEvent;
-  try {
-    stripeEvent = verify(rawBody, signature, secret, Math.floor(Date.now() / 1000));
-  } catch (err) {
-    console.error('Rejected an unverified Stripe webhook: ' + err.message);
-    return json(400, { ok: false, error: 'Signature verification failed' });
-  }
-
-  try {
-    var result;
-    switch (stripeEvent.type) {
-      case 'checkout.session.completed':
-      case 'checkout.session.async_payment_succeeded':
-        var session = stripeEvent.data.object;
-        // A completed session is not always a paid one: bank debits settle later.
-        result = session.payment_status === 'paid'
-          ? await handlePaid(token, session)
-          : { handled: false, reason: 'session not paid yet' };
-        break;
-      case 'charge.refunded':
-        result = await handleRefund(token, stripeEvent.data.object);
-        break;
-      default:
-        result = { handled: false, reason: 'event type not handled' };
-    }
-    // Answer 200 even for events we ignore, so Stripe stops retrying them.
-    return json(200, Object.assign({ ok: true, type: stripeEvent.type }, result));
-  } catch (err) {
-    // A 500 tells Stripe to retry, which is what we want if Airtable was down.
-    console.error('Stripe webhook ' + stripeEvent.type + ' failed: ' + err.message);
-    return json(500, { ok: false, error: 'Could not record the payment' });
-  }
+const HANDLERS = {
+  'checkout.session.completed': onCheckoutCompleted,
+  'checkout.session.async_payment_succeeded': onCheckoutCompleted,
+  'invoice.paid': onInvoicePaid,
+  'invoice.payment_failed': onInvoiceFailed,
+  'customer.subscription.deleted': onSubscriptionEnded,
+  'charge.refunded': onChargeRefunded,
 };
 
-// Exported for local testing.
-exports._internals = { env: env, verify: verify, pacificDate: pacificDate };
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method not allowed' };
+
+  const headers = event.headers || {};
+  const signature = headers['stripe-signature'] || headers['Stripe-Signature'];
+  const rawBody = event.isBase64Encoded ? Buffer.from(event.body, 'base64') : event.body;
+
+  let stripeEvent;
+  try {
+    stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, env('STRIPE_WEBHOOK_SECRET'));
+  } catch (err) {
+    console.error('Signature check failed:', err.message);
+    return { statusCode: 400, body: `Webhook error: ${err.message}` };
+  }
+
+  const handle = HANDLERS[stripeEvent.type];
+  if (!handle) return { statusCode: 200, body: `Ignored ${stripeEvent.type}` };
+
+  try {
+    await handle(stripeEvent.data.object);
+  } catch (err) {
+    // A 500 makes Stripe retry automatically (for up to 3 days).
+    console.error(`Failed on ${stripeEvent.type} (${stripeEvent.id}):`, err);
+    return { statusCode: 500, body: 'Handler error; Stripe will retry' };
+  }
+  return { statusCode: 200, body: 'ok' };
+};
+
+// ---------- checkout ----------
+
+async function onCheckoutCompleted(session) {
+  const clientId = session.client_reference_id || session.metadata?.airtable_client_id;
+  if (!clientId) return console.warn('Checkout session has no Airtable client:', session.id);
+
+  if (session.mode === 'subscription') {
+    // Record the IDs now; invoice.paid marks it Paid and counts payments.
+    await updateRecord(TABLES.clients, clientId, {
+      [CLIENT.billingPlan]: 'Monthly',
+      [CLIENT.paymentMethod]: 'Stripe',
+      [CLIENT.stripeCustomerId]: session.customer,
+      [CLIENT.stripeSubscriptionId]: session.subscription,
+    });
+    await ensureCommitmentEnd(session.subscription);
+    return;
+  }
+
+  // Bank-debit payments arrive later via checkout.session.async_payment_succeeded.
+  if (session.payment_status !== 'paid') return;
+
+  const record = await getRecord(TABLES.clients, clientId);
+  const fields = {
+    ...startDateIfBlank(record),
+    [CLIENT.paymentMethod]: 'Stripe',
+    [CLIENT.billingPlan]: 'Annual',
+    [CLIENT.amountPaid]: session.amount_total / 100,
+    [CLIENT.paymentDate]: todayPacific(),
+    [CLIENT.stripePaymentId]: session.payment_intent,
+    [CLIENT.stripeCustomerId]: session.customer,
+  };
+  if (CAN_BECOME_PAID.has(record.fields[CLIENT.paymentStatus])) {
+    fields[CLIENT.paymentStatus] = 'Paid';
+    fields[CLIENT.clientStatus] = 'Active';
+  }
+  await updateRecord(TABLES.clients, clientId, fields);
+}
+
+// ---------- monthly subscriptions ----------
+
+async function onInvoicePaid(invoice) {
+  const subId = subscriptionIdOf(invoice);
+  if (!subId || invoice.amount_paid <= 0) return;
+
+  const sub = await stripe.subscriptions.retrieve(subId);
+  const clientId = sub.metadata?.airtable_client_id;
+  if (!clientId) return console.warn('Subscription has no Airtable client:', subId);
+
+  // Also set here in case this event arrives before checkout.session.completed.
+  await ensureCommitmentEnd(sub);
+
+  const { count, total } = await paidInvoiceTotals(subId);
+  const record = await getRecord(TABLES.clients, clientId);
+  const fields = {
+    ...startDateIfBlank(record),
+    [CLIENT.paymentMethod]: 'Stripe',
+    [CLIENT.billingPlan]: 'Monthly',
+    [CLIENT.stripeCustomerId]: sub.customer,
+    [CLIENT.stripeSubscriptionId]: subId,
+    [CLIENT.monthlyPaymentsMade]: count,
+    [CLIENT.amountPaid]: total / 100,
+    [CLIENT.paymentDate]: todayPacific(),
+    [CLIENT.monthlyBillingStatus]: count >= commitmentOf(sub) ? 'Completed' : 'Active',
+  };
+  if (CAN_BECOME_PAID.has(record.fields[CLIENT.paymentStatus])) {
+    fields[CLIENT.paymentStatus] = 'Paid';
+    fields[CLIENT.clientStatus] = 'Active';
+  }
+  await updateRecord(TABLES.clients, clientId, fields);
+}
+
+async function onInvoiceFailed(invoice) {
+  const subId = subscriptionIdOf(invoice);
+  if (!subId) return;
+  const sub = await stripe.subscriptions.retrieve(subId);
+  const clientId = sub.metadata?.airtable_client_id;
+  if (!clientId) return;
+  // Stripe retries the card automatically; a later invoice.paid sets this back to Active.
+  await updateRecord(TABLES.clients, clientId, { [CLIENT.monthlyBillingStatus]: 'Past Due' });
+}
+
+async function onSubscriptionEnded(sub) {
+  const clientId = sub.metadata?.airtable_client_id;
+  if (!clientId) return;
+  const { count } = await paidInvoiceTotals(sub.id);
+  const finished = count >= commitmentOf(sub);
+  await updateRecord(TABLES.clients, clientId, {
+    [CLIENT.monthlyPaymentsMade]: count,
+    [CLIENT.monthlyBillingStatus]: finished ? 'Completed' : 'Canceled Early',
+    // Early cancellation drops them from the public directory (it requires Paid).
+    ...(finished ? {} : { [CLIENT.paymentStatus]: 'Canceled' }),
+  });
+}
+
+// ---------- refunds (annual payments) ----------
+
+async function onChargeRefunded(charge) {
+  if (!charge.payment_intent) return;
+  const pi = String(charge.payment_intent).replace(/[^A-Za-z0-9_]/g, '');
+  const record = await findOne(TABLES.clients, `{Stripe Payment ID} = '${pi}'`);
+  if (!record) return console.log('Refund not matched to an annual sponsor (monthly refunds are manual):', pi);
+  const fullyRefunded = charge.amount_refunded >= charge.amount;
+  await updateRecord(TABLES.clients, record.id, {
+    [CLIENT.paymentStatus]: fullyRefunded ? 'Refunded' : 'Partially paid',
+    [CLIENT.amountPaid]: (charge.amount - charge.amount_refunded) / 100,
+  });
+}
+
+// ---------- helpers ----------
+
+// Makes the subscription end on its own after the committed number of months.
+async function ensureCommitmentEnd(subOrId) {
+  const sub = typeof subOrId === 'string' ? await stripe.subscriptions.retrieve(subOrId) : subOrId;
+  if (sub.cancel_at || sub.status === 'canceled') return;
+  const end = new Date(sub.billing_cycle_anchor * 1000);
+  end.setUTCMonth(end.getUTCMonth() + commitmentOf(sub));
+  await stripe.subscriptions.update(sub.id, {
+    cancel_at: Math.floor(end.getTime() / 1000),
+    proration_behavior: 'none',
+  });
+}
+
+async function paidInvoiceTotals(subId) {
+  let count = 0;
+  let total = 0;
+  for await (const inv of stripe.invoices.list({ subscription: subId, status: 'paid', limit: 100 })) {
+    if (inv.amount_paid > 0) {
+      count += 1;
+      total += inv.amount_paid;
+    }
+  }
+  return { count, total };
+}
+
+function subscriptionIdOf(invoice) {
+  // Newer Stripe API versions nest this under parent; older ones put it at the top.
+  return invoice.parent?.subscription_details?.subscription || invoice.subscription || null;
+}
+
+function commitmentOf(sub) {
+  return parseInt(sub.metadata?.commitment_months, 10) || DEFAULT_COMMITMENT;
+}
+
+// Deliverable deadlines count from Sponsorship Start Date, so it must be set
+// in the same write that flips Payment Status to Paid.
+function startDateIfBlank(record) {
+  return record.fields[CLIENT.startDate] ? {} : { [CLIENT.startDate]: todayPacific() };
+}

@@ -10,8 +10,10 @@ and confirm school availability first. Payment comes after approval:
 1. An application is approved in the Lead Follow-Up Funnel.
 2. `sync-approved` copies it into the Hub as a Client, `Awaiting payment`.
 3. You copy that Client's **Stripe Checkout Link** into your approval email.
-4. The sponsor clicks it. `stripe-checkout` looks up their linked Package,
-   prices the session from it, and sends them to Stripe's hosted checkout.
+4. The sponsor clicks it. `pay` looks up their linked Package. Bronze, Silver
+   and Gold sponsors first choose **yearly** (one payment, two months free) or
+   **monthly** (12 payments, then billing stops automatically). District tiers
+   go straight to yearly checkout. Prices come from the Package's Stripe Price IDs.
 5. They pay. Stripe calls `stripe-webhook`, which marks the Client **Paid**.
 6. Marking them Paid is what fires the deliverable automations.
 
@@ -32,7 +34,9 @@ payment arrived.
 | `STRIPE_SECRET_KEY` | `sk_live_...` | Stripe Dashboard > Developers > API keys |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Created in step 2 below |
 
-`AIRTABLE_TOKEN` is already set and is reused here.
+`AIRTABLE_TOKEN` is already set and is reused here. The Hub base is read from
+`AIRTABLE_HUB_BASE_ID` (defaulting to the Client Deliverables Hub), never from
+`AIRTABLE_BASE_ID`, which on this site is the Lead Follow-Up Funnel.
 
 Test everything with your **test mode** keys (`sk_test_...`) first. The test and
 live keys have separate webhook secrets — they are not interchangeable.
@@ -44,11 +48,16 @@ belong only in Netlify environment variables.
 
 In Stripe Dashboard > Developers > Webhooks > **Add endpoint**:
 
-- **URL:** `https://jointheshamrockclub.com/.netlify/functions/stripe-webhook`
+- **URL:** `https://jointheshamrockclub.com/api/stripe-webhook`
 - **Events to send:**
   - `checkout.session.completed`
   - `checkout.session.async_payment_succeeded`
+  - `invoice.paid`
+  - `invoice.payment_failed`
+  - `customer.subscription.deleted`
   - `charge.refunded`
+
+(This endpoint is already registered on the live account.)
 
 Then copy the endpoint's **signing secret** into `STRIPE_WEBHOOK_SECRET` and
 redeploy so the functions pick it up.
@@ -77,6 +86,26 @@ Use test mode keys and card `4242 4242 4242 4242`, any future expiry, any CVC.
 
 If nothing happens, check Stripe Dashboard > Webhooks > your endpoint. Failed
 deliveries are listed there with the response our function returned.
+
+## Monthly plans
+
+- Bronze $49, Silver $99, Gold $199 per month, 12 payments. Paying yearly
+  ($497 / $997 / $1,997) works out to two months free.
+- Prices live in Stripe; each Package row stores its `Stripe Annual Price ID`
+  and `Stripe Monthly Price ID`. Stripe prices cannot be edited: to change one,
+  create a new Price in Stripe and paste its ID into the Package row. Leave
+  `Stripe Monthly Price ID` blank to make a package yearly-only.
+- The first monthly payment marks the Client **Paid** (so deliverables start)
+  and sets **Monthly Billing Status** to Active. Every payment recounts
+  **Monthly Payments Made** from Stripe, so it can never double-count.
+- A failed card sets **Monthly Billing Status** to Past Due; Stripe retries
+  automatically. Payment Status is deliberately left at Paid, because flipping
+  it off and back on would re-run the deliverable automations and duplicate tasks.
+- The subscription ends itself after 12 payments (Completed). If it ends early,
+  the Client becomes **Canceled** and drops off the public directory.
+- Hold the banner and plaque for monthly sponsors until Monthly Payments Made
+  reaches 2.
+- Refunds of monthly payments are not synced automatically; adjust by hand.
 
 ## Notes on how it behaves
 

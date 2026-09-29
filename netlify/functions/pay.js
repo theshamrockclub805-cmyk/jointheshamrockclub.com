@@ -5,9 +5,7 @@
 // never drift. Packages with a monthly option show a plan chooser first;
 // annual-only packages (District tiers) go straight to checkout.
 
-const { stripe, TABLES, CLIENT, PACKAGE, getRecord } = require('../lib/shared');
-
-const SITE = process.env.URL || 'https://jointheshamrockclub.com';
+const { stripe, SITE_URL: SITE, TABLES, CLIENT, PACKAGE, getRecord } = require('../lib/shared');
 const COMMITMENT_MONTHS = 12;
 
 exports.handler = async (event) => {
@@ -62,9 +60,10 @@ exports.handler = async (event) => {
       price: plan === 'monthly' ? p[PACKAGE.monthlyPriceId] : p[PACKAGE.annualPriceId],
       quantity: 1,
     }],
-    success_url: `${SITE}/pay?client=${clientId}&status=success`,
+    success_url: `${SITE}/payment-complete.html?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${SITE}/pay?client=${clientId}`,
     metadata,
+    billing_address_collection: 'required',
     ...(email ? { customer_email: email } : {}),
   };
 
@@ -88,6 +87,9 @@ exports.handler = async (event) => {
           ...common,
           mode: 'payment',
           customer_creation: 'always',
+          // Sponsors file these against their own books. (Monthly plans get
+          // invoices automatically as subscriptions.)
+          invoice_creation: { enabled: true },
           payment_intent_data: { description, metadata },
         });
 
