@@ -241,6 +241,16 @@ function clientFieldsFrom(app, packagesByName) {
     if (id) fields['Selected Package'] = [id];
   }
 
+  // Referral credit travels with the sponsor, so payouts can be worked out
+  // from the Hub where the payments live.
+  var heardVia = f['How Did You Hear'];
+  heardVia = heardVia && typeof heardVia === 'object' ? heardVia.name : heardVia;
+  var source = [heardVia, f['Referred By']].filter(Boolean).join(': ');
+  if (f['UTM Source']) source += (source ? ' ' : '') + '(link: ' + f['UTM Source'] +
+    (f['UTM Campaign'] ? ' / ' + f['UTM Campaign'] : '') + ')';
+  if (source) fields['Referral Source'] = source.slice(0, 250);
+  if (f['Oxnard USA Referral'] === 'Yes') fields['Oxnard USA Referral'] = true;
+
   // Carry the context the team needs for the first call, in one readable block.
   var notes = [];
   notes.push('Created automatically from the approved sponsorship application.');
@@ -251,6 +261,7 @@ function clientFieldsFrom(app, packagesByName) {
   }
   if (f['City']) notes.push('City: ' + f['City']);
   if (f['Website']) notes.push('Website: ' + f['Website']);
+  if (f['Business License or EIN']) notes.push('License / EIN: ' + f['Business License or EIN']);
   if (f['Preferred Contact Window']) notes.push('Best time to call: ' + f['Preferred Contact Window']);
   if (f['Callback Requested']) notes.push('Asked for a callback before anything is finalised.');
   if (f['Applicant Notes']) notes.push('Their notes: ' + f['Applicant Notes']);

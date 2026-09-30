@@ -215,6 +215,8 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
   .success{padding:40px 22px}
 }
 </style>
+<style>.field[hidden]{display:none}</style>
+<script src="/tracking.js"></script>
 </head>
 <body>
 
@@ -248,6 +250,11 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
 
       <form class="form-card" id="apply-form" name="sponsorship-application" method="POST" data-netlify="true" netlify-honeypot="companyWebsite" enctype="multipart/form-data" novalidate>
         <input type="hidden" name="form-name" value="sponsorship-application">
+        <input type="hidden" name="utm_source" id="utm_source">
+        <input type="hidden" name="utm_medium" id="utm_medium">
+        <input type="hidden" name="utm_campaign" id="utm_campaign">
+        <input type="hidden" name="utm_content" id="utm_content">
+        <input type="hidden" name="referring_site" id="referring_site">
         <p class="hp-field"><label>Company website<input name="companyWebsite" tabindex="-1" autocomplete="off"></label></p>
 
         <fieldset>
@@ -353,6 +360,12 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
             <label for="website">Website or social profile</label>
             <input type="text" id="website" name="website" placeholder="yourbusiness.com">
           </div>
+          <div class="field">
+            <label for="license">Business license # or EIN</label>
+            <input type="text" id="license" name="license" autocomplete="off" placeholder="City license #, CA SOS entity #, or EIN (XX-XXXXXXX)">
+            <p class="hint">Optional, but it speeds up verification. Please don't enter a Social Security number.</p>
+            <p class="error-msg">That looks like a Social Security number. Please use a business license number or EIN instead.</p>
+          </div>
         </fieldset>
 
         <fieldset>
@@ -424,6 +437,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
             <label for="heard">How did you hear about Shamrock Club? <span class="req">*</span></label>
             <select id="heard" name="heard" required>
               <option value="">Select one</option>
+              <option>Oxnard USA</option>
               <option>Instagram</option>
               <option>Facebook</option>
               <option>YouTube</option>
@@ -434,6 +448,12 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <option>Other</option>
             </select>
             <p class="error-msg">Let us know where you heard about us.</p>
+          </div>
+          <div class="field" id="referred-field" hidden>
+            <label for="referred-by" id="referred-label">Who referred you?</label>
+            <input type="text" id="referred-by" name="referredBy" maxlength="200">
+            <p class="hint" id="referred-hint">So we can thank the right person.</p>
+            <p class="error-msg">Please tell us who, so we can give them credit.</p>
           </div>
         </fieldset>
 
@@ -599,10 +619,61 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       bestTime: data.bestTime || '',
       school: data.school || '',
       heard: data.heard || '',
+      referredBy: data.referredBy || '',
+      license: data.license || '',
+      utmSource: data.utm_source || '',
+      utmMedium: data.utm_medium || '',
+      utmCampaign: data.utm_campaign || '',
+      utmContent: data.utm_content || '',
+      referringSite: data.referring_site || '',
       notes: data.notes || '',
       callback: !!document.getElementById('callback').checked
     };
   }
+
+  // Remembered link tags (see /tracking.js) ride along with the application.
+  var attribution = (window.ShamrockTracking && window.ShamrockTracking.get()) || {};
+  ['utm_source','utm_medium','utm_campaign'].forEach(function(k){
+    var el = document.getElementById(k);
+    if (el && attribution[k]) el.value = attribution[k];
+  });
+  var contentEl = document.getElementById('utm_content');
+  if (contentEl) contentEl.value = [attribution.utm_content, attribution.utm_term].filter(Boolean).join(' | ');
+  var refEl = document.getElementById('referring_site');
+  if (refEl && attribution.referrer) refEl.value = attribution.referrer;
+
+  // "How did you hear" write-in: shown for every answer, worded to match it,
+  // and required where credit is owed to a named person or source.
+  var REFERRAL_PROMPTS = {
+    'Oxnard USA': ['Who at Oxnard USA? (optional)', 'A name, or where you saw it: newsletter, 99.3 FM, website...', false],
+    'Instagram': ['Which account? (optional)', '@handle', false],
+    'Facebook': ['Which page or person? (optional)', 'Page or person name', false],
+    'YouTube': ['Which channel or video? (optional)', 'Channel or video name', false],
+    'TikTok': ['Which account? (optional)', '@handle', false],
+    'Referral from another business': ['Who referred you?', 'Business or person name', true],
+    'A school or coach': ['Which school or coach?', 'School, team, or coach name', true],
+    'Local event': ['Which event? (optional)', 'Event name', false],
+    'Other': ['Where did you hear about us?', 'A name, @handle, website, or event', true]
+  };
+  var heardEl = document.getElementById('heard');
+  var referredField = document.getElementById('referred-field');
+  var referredInput = document.getElementById('referred-by');
+  var referredLabel = document.getElementById('referred-label');
+  function referralPrompt(){ return REFERRAL_PROMPTS[heardEl.value] || null; }
+  function updateReferral(){
+    var p = referralPrompt();
+    referredField.hidden = !p;
+    if (!p) return;
+    referredLabel.innerHTML = '';
+    referredLabel.appendChild(document.createTextNode(p[0] + ' '));
+    if (p[2]) { var req = document.createElement('span'); req.className = 'req'; req.textContent = '*'; referredLabel.appendChild(req); }
+    referredInput.placeholder = p[1];
+    referredField.classList.remove('invalid');
+  }
+  heardEl.addEventListener('change', updateReferral);
+  updateReferral();
+
+  var SSN_PATTERN = /^\s*\d{3}[- ]\d{2}[- ]\d{4}\s*$/;
 
   form.addEventListener('submit', function(e){
     e.preventDefault();
@@ -618,6 +689,19 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       field.classList.toggle('invalid', !ok);
       if (!ok) valid = false;
     });
+
+    var p = referralPrompt();
+    if (p && p[2] && !referredInput.value.trim()) {
+      referredField.classList.add('invalid');
+      valid = false;
+    } else {
+      referredField.classList.remove('invalid');
+    }
+
+    var licenseEl = document.getElementById('license');
+    var looksLikeSsn = SSN_PATTERN.test(licenseEl.value);
+    licenseEl.closest('.field').classList.toggle('invalid', looksLikeSsn);
+    if (looksLikeSsn) valid = false;
 
     if (!valid) {
       var firstBad = form.querySelector('.invalid input, .invalid select');
@@ -652,6 +736,9 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       }
       if (submitButton) submitButton.disabled = false;
       if (submitNote) submitNote.textContent = defaultNote;
+      if (window.ShamrockTracking) window.ShamrockTracking.event('generate_lead', {
+        tier: selectedTier(), heard: data.heard || ''
+      });
       layout.style.display = 'none';
       successPanel.style.display = 'block';
       successPanel.scrollIntoView({behavior:'smooth', block:'center'});

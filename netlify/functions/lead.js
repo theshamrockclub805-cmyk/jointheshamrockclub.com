@@ -79,6 +79,17 @@ function clean(value, maxLength) {
   return String(value).trim().slice(0, maxLength || 500);
 }
 
+/**
+ * The license/EIN box is optional and free text. The form blocks anything
+ * shaped like a Social Security number, and this repeats that check server
+ * side so an SSN is never stored even if the browser check is bypassed.
+ */
+function cleanLicense(value) {
+  var v = clean(value, 100);
+  if (/^\d{3}[- ]\d{2}[- ]\d{4}$/.test(v)) return '';
+  return v;
+}
+
 function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
@@ -218,6 +229,13 @@ function buildApplicationRecord(data, now) {
     'Contact Role': clean(data.role, 200),
     'Preferred School or Program': clean(data.school, 300),
     'How Did You Hear': clean(data.heard, 200),
+    'Referred By': clean(data.referredBy, 200),
+    'Business License or EIN': cleanLicense(data.license),
+    'UTM Source': clean(data.utmSource, 200),
+    'UTM Medium': clean(data.utmMedium, 200),
+    'UTM Campaign': clean(data.utmCampaign, 200),
+    'UTM Content': clean(data.utmContent, 300),
+    'Referring Site': clean(data.referringSite, 200),
     'Applicant Notes': clean(data.notes, 5000)
   };
   Object.keys(optional).forEach(function (key) {
