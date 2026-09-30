@@ -13,7 +13,7 @@
  *    nothing is loaded.
  */
 (function () {
-  var GA_MEASUREMENT_ID = ''; // e.g. 'G-ABC123XYZ9'
+  var GA_MEASUREMENT_ID = 'G-DCNFYJ8C9Z';
 
   var KEY = 'shamrock_attribution';
   var MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
