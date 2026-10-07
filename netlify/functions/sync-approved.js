@@ -109,10 +109,23 @@ function isVerified(app) {
   });
 }
 
-/** Applications that are approved and have not been pushed across yet. */
+/**
+ * Approved applications that still need something done to them: either they
+ * have never been pushed across, or they were pushed but their approval email
+ * never went out.
+ *
+ * That second case matters more than it looks. The push is stamped before the
+ * email is sent, so without it a failed send would drop the application out of
+ * this query for good: the sponsor would exist in both bases, holding a school
+ * slot, and never be asked to pay. Picking them back up is what makes the
+ * "retries next run" promise on sendApprovalEmail actually true.
+ */
 async function findApproved(token) {
   var formula = encodeURIComponent(
-    "AND({Application Status}='Approved', NOT({Pushed to Deliverables Hub}))"
+    "AND({Application Status}='Approved', OR(" +
+      "NOT({Pushed to Deliverables Hub}), " +
+      "AND({Hub Client Record}!='', NOT({Approval Email Sent At}))" +
+    "))"
   );
   var data = await airtable(token, LEAD_BASE + '/' + APPS_TABLE + '?filterByFormula=' + formula + '&pageSize=50');
   return data.records || [];
@@ -350,11 +363,27 @@ async function syncOnce() {
   var packagesByName = await packageIdsByName(token);
   var schoolsByName = await schoolIdsByName(token);
   var synced = [];
+  var retriedEmail = [];
   var failed = [];
 
   for (var i = 0; i < approved.length; i++) {
     var app = approved[i];
     try {
+      var f = app.fields || {};
+
+      // Already across, and only here because its approval email never went
+      // out. Creating the Client or the slot again would duplicate a sponsor
+      // and burn a second school slot, so this path only sends the email.
+      if (f['Pushed to Deliverables Hub'] === true) {
+        var existingClient = f['Hub Client Record'] || '';
+        var resent = await sendApprovalEmail(token, app, existingClient);
+        console.log('Retried the approval email for ' + app.id +
+          ' (client ' + existingClient + '): ' + (resent ? 'sent' : 'still failing'));
+        retriedEmail.push({ application: app.id, client: existingClient, approvalEmailed: resent });
+        if (!resent) failed.push(app.id);
+        continue;
+      }
+
       // The slot goes first: it is idempotent, so a later failure can retry it
       // harmlessly, whereas creating the Client twice would duplicate a sponsor.
       var slot = await recordSchoolSlot(token, app, schoolsByName);
@@ -387,9 +416,13 @@ async function syncOnce() {
       });
 
       // The payment link only exists once the Client does, so the approval
-      // email goes last. It is best-effort: the sponsor is already set up, and
-      // an email failure must not undo that or block the next application.
+      // email goes last. It must not undo the sponsor's setup or block the next
+      // application, so a failure here is left to the retry pass above.
       var emailed = await sendApprovalEmail(token, app, clientId);
+      if (!emailed) {
+        console.warn('Sponsor ' + app.id + ' is set up but their approval email did not send. ' +
+          'The next run will retry it; they have not been asked to pay yet.');
+      }
 
       synced.push({
         application: app.id,
@@ -407,9 +440,10 @@ async function syncOnce() {
   return {
     ok: failed.length === 0,
     synced: synced.length,
+    approvalEmailsRetried: retriedEmail.length,
     failed: failed.length,
     blockedByVerification: blocked.length,
-    details: synced
+    details: synced.concat(retriedEmail)
   };
 }
 
@@ -433,6 +467,7 @@ exports.handler = async function () {
 };
 
 exports._internals = {
+  syncOnce: syncOnce,
   sendApprovalEmail: sendApprovalEmail,
   clientFieldsFrom: clientFieldsFrom,
   env: env,
