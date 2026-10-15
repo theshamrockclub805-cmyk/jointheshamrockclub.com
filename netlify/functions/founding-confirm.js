@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Receives a founding member's confirmation from /founding-partner.html and
+ * Receives a founding member's confirmation from /founding-partners-application.html and
  * creates the matching record in the "Founding Partners" table.
  *
  * Every field here is part of a signed membership agreement, so this endpoint

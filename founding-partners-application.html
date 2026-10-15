@@ -349,7 +349,7 @@
   }
 
   // Prefill from the unique link each member receives, e.g.
-  // founding-partner.html?id=OHS-014&biz=Acme%20Plumbing&name=Jo%20Rivera&email=jo@acme.com
+  // /founding-partners-application?id=OHS-014&biz=Acme%20Plumbing&name=Jo%20Rivera&email=jo@acme.com
   var params = new URLSearchParams(window.location.search);
   var map = { id:'member-id', biz:'biz-name', name:'contact-name', email:'email', cat:'category' };
   Object.keys(map).forEach(function(key){
