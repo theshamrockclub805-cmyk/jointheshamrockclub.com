@@ -325,18 +325,11 @@
 <script src="/tracking.js"></script>
 <script>
   // ---------------------------------------------------------------------------
-  // CONFIGURE BEFORE SENDING THIS LINK TO ANYONE.
-  //
-  // ENDPOINT is where a confirmation is saved. While it is empty, the form
-  // deliberately refuses to submit: every field below is part of a signed
-  // membership agreement, and showing someone "you're confirmed" when nothing
-  // was stored would lose their signature and tell them an untruth.
-  //
   // AGREEMENT_URL is the Membership Agreement people are agreeing to. While it
-  // is empty the checkbox text stays, but the link is inert rather than a
-  // dead link to a page that does not exist.
+  // is empty the checkbox wording stays, but the link is dropped rather than
+  // pointing at a page that does not exist.
   // ---------------------------------------------------------------------------
-  var ENDPOINT = '';
+  var ENDPOINT = '/.netlify/functions/founding-confirm';
   var AGREEMENT_URL = '';
 
   var form = document.getElementById('confirm-form');
@@ -422,31 +415,77 @@
       return;
     }
 
-    var payload = new FormData(form);
+    var payload = {
+      memberId: document.getElementById('member-id').value,
+      bizName: document.getElementById('biz-name').value,
+      displayName: document.getElementById('display-name').value,
+      category: document.getElementById('category').value,
+      joined: document.getElementById('joined').value,
+      ein: document.getElementById('ein').value,
+      website: document.getElementById('website').value,
+      contactName: document.getElementById('contact-name').value,
+      email: document.getElementById('email').value,
+      phone: document.getElementById('phone').value,
+      billingEmail: document.getElementById('billing-email').value,
+      interest: interest.value,
+      notes: document.getElementById('notes').value,
+      signature: document.getElementById('signature').value,
+      signDate: document.getElementById('sign-date').value,
+      agree: document.getElementById('agree').checked,
+      license: document.getElementById('license').checked
+    };
 
     // Remembered link tags (see /tracking.js) ride along, same as the
     // application form, so we can tell which outreach brought someone back.
     var attribution = (window.ShamrockTracking && window.ShamrockTracking.get()) || {};
     ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','referrer','landing_page']
-      .forEach(function(k){ if (attribution[k]) payload.append(k, attribution[k]); });
+      .forEach(function(k){ if (attribution[k]) payload[k] = attribution[k]; });
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Confirming...';
 
-    fetch(ENDPOINT, { method: 'POST', body: payload })
-      .then(function(res){
-        if (!res.ok) throw new Error('Server responded ' + res.status);
+    readLogo().then(function(logo){
+      if (logo) payload.logo = logo;
+      return fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(body){
+        if (!res.ok || !body.ok) throw new Error(body.error || 'Server responded ' + res.status);
         form.style.display = 'none';
         successPanel.style.display = 'block';
         successPanel.scrollIntoView({behavior:'smooth'});
-      })
-      .catch(function(){
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Confirm my membership';
-        showError('We could not save your confirmation just now, so nothing was recorded. ' +
-                  'Please try again, or email theshamrockclub805@gmail.com and we will take care of it.');
       });
+    }).catch(function(err){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirm my membership';
+      showError((err && err.message ? err.message + ' ' : '') +
+                'Nothing was recorded. Please try again, or email ' +
+                'theshamrockclub805@gmail.com and we will take care of it.');
+    });
   });
+
+  /**
+   * Read the logo as base64 so it can travel inside the JSON body. Resolves to
+   * null for no file or an unreadable one: a missing logo is never a reason to
+   * lose someone's confirmation.
+   */
+  function readLogo(){
+    return new Promise(function(resolve){
+      var input = document.getElementById('logo');
+      var file = input.files && input.files[0];
+      if (!file) return resolve(null);
+      if (file.size > 3 * 1024 * 1024) return resolve(null);
+      var reader = new FileReader();
+      reader.onload = function(){
+        resolve({ name: file.name, type: file.type, data: String(reader.result) });
+      };
+      reader.onerror = function(){ resolve(null); };
+      reader.readAsDataURL(file);
+    });
+  }
 </script>
 
 </body>

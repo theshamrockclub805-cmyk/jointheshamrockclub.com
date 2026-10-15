@@ -131,9 +131,62 @@ function paymentWelcome(data) {
   };
 }
 
+/**
+ * 4. A founding member confirmed their details and locked a tier. Nothing is
+ *    charged, so this email's job is to put the terms they just agreed to in
+ *    writing, in their inbox, where they can find them in eighteen months.
+ */
+function foundingPartnerConfirmed(data) {
+  var price = money(data.lockedPrice);
+  var blocks = [];
+  if (data.businessName) blocks.push({ label: 'Business', value: data.businessName });
+  if (data.tier) blocks.push({ label: 'Tier you locked in', value: data.tier });
+  if (price) blocks.push({ label: 'Your locked price', value: price + ' per year' });
+  if (data.signatureName) blocks.push({ label: 'Signed by', value: data.signatureName });
+  if (data.signatureDate) blocks.push({ label: 'Signed on', value: data.signatureDate });
+
+  var terms = [
+    { text: 'To be clear about what happens next, and when:' },
+    { bullets: [
+      'Now through spring 2027: no cost. You stay in the Oxnard High School network.',
+      'The 2027-28 school year: billing begins, with advance notice. Banners and plaques go up that fall.',
+      '2027-28 and 2028-29: your price stays ' + (price ? 'at ' + price : 'locked') +
+        ', even if our pricing goes up.',
+      'Ongoing: Founding Partner recognition on our website and sponsor listings.'
+    ] }
+  ];
+
+  // Someone asking about multiple schools has not locked a price, so promising
+  // them one would be wrong. They get a conversation instead.
+  if (!price) {
+    terms = [
+      { text: 'You asked about sponsoring more than one school, so we have not set a price yet. ' +
+              'We will reach out to walk through the District Partner, Leader and Champion options ' +
+              'with you. Your founding partner standing is recorded either way, and nothing is ' +
+              'charged before the 2027-28 school year.' }
+    ];
+  }
+
+  return {
+    to: data.email,
+    subject: 'Confirmed — ' + (data.businessName || 'your business') + ' as a Shamrock Founding Partner',
+    preheader: 'Your founding partner terms, in writing.',
+    heading: 'You are confirmed',
+    intro: [
+      'Hi ' + firstName(data.contactName) + ', thank you. You were with Shamrock before there was a ' +
+      'fee or a structure, and your founding partner standing is now on the record.',
+      'Here is what we have:'
+    ],
+    blocks: blocks.concat(terms),
+    footerNote: 'Keep this email: it is your record of the terms you agreed to. ' +
+                'Anything look wrong? Just reply and we will fix it.'
+  };
+}
+
 module.exports = {
   applicationReceived: applicationReceived,
   approvedWithPaymentLink: approvedWithPaymentLink,
   paymentWelcome: paymentWelcome,
+  foundingPartnerConfirmed: foundingPartnerConfirmed,
   _internals: { money: money, firstName: firstName }
 };
