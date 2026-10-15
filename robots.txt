@@ -1,0 +1,4 @@
+# Founding Partner confirmation is sent as a direct link to specific members.
+# It carries a noindex tag as well; this keeps well-behaved crawlers off it too.
+User-agent: *
+Disallow: /founding-partner.html

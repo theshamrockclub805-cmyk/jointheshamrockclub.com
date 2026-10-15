@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Reachable only by the direct link we send each founding member: it is not
+     linked from anywhere on the site, and these keep it out of search results. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Shamrock Community Foundation — Founding Partner confirmation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --purple:#190062; --purple-deep:#0D0040;
+    --red:#CB0000; --red-deep:#8F0000;
+    --bg:#FBFAFD; --bg-alt:#F1EEFA;
+    --ink:#211A33; --ink-soft:#5C5570;
+    --bronze:#A9673A; --silver:#6E7C99; --gold:#C79A3C; --gold-deep:#8F6C25;
+    --line: rgba(25,0,98,0.16);
+    --danger:#9C2B2B;
+    --font-h:'Anton',sans-serif; --font-d:'Oswald',sans-serif; --font-b:'Lora',serif; --font-m:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-b);line-height:1.6;}
+  a{color:var(--purple);}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px;}
+  .eyebrow{font-family:var(--font-m);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:600;}
+  h1{font-family:var(--font-h);font-weight:400;color:var(--purple);text-transform:uppercase;margin:0;}
+  h2,h3{font-family:var(--font-d);font-weight:600;color:var(--purple);margin:0;}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-d);font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:15px;padding:14px 28px;border-radius:3px;border:2px solid transparent;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:var(--red);color:#fff;box-shadow:0 4px 0 var(--red-deep);}
+  .btn-primary:hover{box-shadow:0 6px 0 var(--red-deep);}
+  .btn[disabled]{opacity:.6;cursor:progress;transform:none;box-shadow:0 4px 0 var(--red-deep);}
+
+  header{border-bottom:1px solid var(--line);background:#fff;}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+  .brand img{height:40px;width:auto;border-radius:6px;display:block;}
+  .nav .tagline{font-family:var(--font-m);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+
+  .intro{padding:48px 0 8px;}
+  .intro h1{font-size:clamp(28px,4vw,38px);line-height:1.1;margin-top:10px;}
+  .intro p{color:var(--ink-soft);font-size:16px;margin-top:14px;max-width:60ch;}
+
+  .terms{background:var(--purple);color:#fff;border-radius:10px;padding:26px 26px 22px;margin-top:26px;}
+  .terms .badge{display:inline-block;font-family:var(--font-m);font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--purple-deep);padding:4px 11px;border-radius:20px;font-weight:600;}
+  .terms h2{color:#fff;font-size:21px;margin-top:12px;}
+  .timeline{list-style:none;margin:16px 0 0;padding:0;}
+  .timeline li{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:10px 0;border-top:1px solid rgba(255,255,255,.18);font-size:14.5px;color:#E7E1F6;}
+  .timeline li:first-child{border-top:none;}
+  .timeline .when{font-family:var(--font-m);font-size:12.5px;letter-spacing:.03em;color:var(--gold);}
+  .timeline strong{color:#fff;font-weight:600;}
+
+  form{padding:30px 0 80px;}
+  fieldset{border:none;margin:0 0 34px;padding:0;}
+  legend{font-family:var(--font-d);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);padding:0 0 14px;width:100%;border-bottom:1px solid var(--line);margin-bottom:20px;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .field{margin-bottom:18px;}
+  .field label.lbl{display:block;font-family:var(--font-m);font-size:12.5px;letter-spacing:.03em;color:var(--ink);margin-bottom:7px;}
+  .field .hint{font-size:12.5px;color:var(--ink-soft);margin:5px 0 0;font-family:var(--font-b);}
+  .req{color:var(--red);}
+  input[type=text], input[type=email], input[type=tel], input[type=url], input[type=date], select, textarea{
+    width:100%;font-family:var(--font-b);font-size:15px;color:var(--ink);
+    background:#fff;border:1.5px solid var(--line);border-radius:4px;padding:12px 13px;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--purple);outline-offset:1px;border-color:var(--purple);}
+  textarea{resize:vertical;min-height:88px;}
+  .error-msg{display:none;color:var(--danger);font-size:12.5px;font-family:var(--font-m);margin-top:6px;}
+  .field.invalid input, .field.invalid select, .field.invalid textarea{border-color:var(--danger);}
+  .field.invalid .error-msg{display:block;}
+
+  .choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .choice{position:relative;}
+  .choice input{position:absolute;opacity:0;}
+  .choice span{display:block;padding:14px 14px;border:1.5px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;font-size:14px;transition:border-color .15s, background .15s;}
+  .choice .t{display:block;font-family:var(--font-d);font-weight:600;font-size:15px;color:var(--ink);}
+  .choice .d{display:block;font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .choice input:checked + span{border:2px solid var(--purple);background:var(--bg-alt);padding:13.5px 13.5px;}
+  .choice input:focus-visible + span{outline:2px solid var(--purple);outline-offset:2px;}
+
+  .offer{background:var(--bg-alt);border-left:4px solid var(--gold);border-radius:3px;padding:14px 16px;font-size:14px;color:var(--ink);margin-bottom:16px;}
+  .offer strong{color:var(--purple);}
+
+  .check{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;margin-bottom:12px;}
+  .check input{margin-top:5px;width:18px;height:18px;accent-color:var(--purple);flex:none;}
+  .field.invalid .check{color:var(--danger);}
+
+  .file-drop{border:1.5px dashed var(--line);border-radius:4px;padding:20px;text-align:center;background:#fff;font-size:13.5px;color:var(--ink-soft);}
+  .file-drop input{margin-top:8px;font-family:var(--font-b);font-size:13px;}
+
+  .sign-box{background:#fff;border:1.5px solid var(--line);border-radius:6px;padding:20px;}
+  .sign-box .typed{font-family:var(--font-b);font-style:italic;}
+  .legal-note{font-size:12.5px;color:var(--ink-soft);margin:10px 0 0;}
+
+  .submit-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .submit-note{font-size:13px;color:var(--ink-soft);}
+  .form-error{display:none;margin-top:18px;background:#FFF4F4;border-left:4px solid var(--danger);border-radius:3px;padding:14px 16px;font-size:14px;color:var(--danger);}
+  .form-error.show{display:block;}
+
+  .success{display:none;padding:70px 0 90px;text-align:center;}
+  .success .seal{width:64px;height:64px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px;}
+  .success h2{font-size:28px;}
+  .success p{color:var(--ink-soft);max-width:50ch;margin:14px auto 0;}
+
+  @media(max-width:640px){
+    .row{grid-template-columns:1fr;}
+    .choice-grid{grid-template-columns:1fr;}
+    .timeline li{grid-template-columns:1fr;gap:2px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="https://jointheshamrockclub.com" aria-label="Shamrock Club home"><img src="shamrock-logo.png" alt="Shamrock Community Foundation"></a>
+    <span class="tagline">Founding Partner confirmation</span>
+  </div>
+</header>
+
+<div class="intro wrap">
+  <p class="eyebrow">Oxnard High School founding partners</p>
+  <h1>Confirm your membership</h1>
+  <p>You were with Shamrock before there was a fee or a structure, and we want to get that recorded properly. This takes about two minutes. Nothing is charged by submitting this form.</p>
+
+  <div class="terms">
+    <span class="badge">Your founding partner terms</span>
+    <h2>What you're confirming</h2>
+    <ul class="timeline">
+      <li><span class="when">Now to spring 2027</span><span><strong>No cost.</strong> Your business stays in the Oxnard High School network through the end of the spring 2027 semester.</span></li>
+      <li><span class="when">2027-28 school year</span><span><strong>Billing begins.</strong> Bronze is $497/year and includes your membership card and app access, window/counter sticker, website and email promotion, event invitations, and donor recognition. Banners and plaques go up in fall 2027.</span></li>
+      <li><span class="when">2027-28 and 2028-29</span><span><strong>Your price is locked.</strong> Whichever tier you choose now, you keep that price for both school years, even if our pricing increases. Choose by <strong>December 15, 2026</strong> and Silver is <strong>$748/year</strong> and Gold is <strong>$1,498/year</strong> (25% off).</span></li>
+      <li><span class="when">Ongoing</span><span><strong>Founding Partner</strong> recognition on our website and sponsor listings.</span></li>
+    </ul>
+  </div>
+</div>
+
+<div class="wrap">
+  <form id="confirm-form" novalidate>
+    <input type="hidden" id="member-id" name="member-id" value="">
+
+    <fieldset>
+      <legend>1. Confirm your business details</legend>
+      <div class="field">
+        <label class="lbl" for="biz-name">Business name <span class="req">*</span></label>
+        <input type="text" id="biz-name" name="biz-name" autocomplete="organization" required>
+        <p class="error-msg">Enter your business name.</p>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label class="lbl" for="display-name">Name as it should appear on our listings</label>
+          <input type="text" id="display-name" name="display-name">
+          <p class="hint">Leave blank to use your business name.</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="category">Business category <span class="req">*</span></label>
+          <select id="category" name="category" required>
+            <option value="">Select one</option>
+            <option>Restaurant &amp; café</option>
+            <option>Retail &amp; shops</option>
+            <option>Professional services</option>
+            <option>Personal care &amp; wellness</option>
+            <option>Home &amp; trade services</option>
+            <option>Automotive</option>
+            <option>Other</option>
+          </select>
+          <p class="error-msg">Select a category.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="joined">Roughly when did you join Shamrock? <span class="req">*</span></label>
+        <select id="joined" name="joined" required>
+          <option value="">Select one</option>
+          <option>Before 2022</option>
+          <option>2022</option>
+          <option>2023</option>
+          <option>2024</option>
+          <option>2025</option>
+          <option>2026</option>
+          <option>Not sure</option>
+        </select>
+        <p class="hint">Helps us record your Founding Partner status accurately.</p>
+        <p class="error-msg">Select a year, or "Not sure."</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. Verify your business</legend>
+      <div class="row">
+        <div class="field">
+          <label class="lbl" for="ein">Business license number or EIN <span class="req">*</span></label>
+          <input type="text" id="ein" name="ein" required>
+          <p class="hint">Used to verify your business. Not shared publicly. Please do not enter a Social Security number.</p>
+          <p class="error-msg">Enter a license number or EIN.</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="website">Business website or social page <span class="req">*</span></label>
+          <input type="url" id="website" name="website" placeholder="https://" required>
+          <p class="hint">Helps us confirm your business is active.</p>
+          <p class="error-msg">Enter a valid website or social media URL.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Who should we contact?</legend>
+      <div class="row">
+        <div class="field">
+          <label class="lbl" for="contact-name">Owner / main contact <span class="req">*</span></label>
+          <input type="text" id="contact-name" name="contact-name" autocomplete="name" required>
+          <p class="error-msg">Enter a contact name.</p>
+        </div>
+        <div class="field">
+          <label class="lbl" for="email">Email <span class="req">*</span></label>
+          <input type="email" id="email" name="email" autocomplete="email" required>
+          <p class="error-msg">Enter a valid email address.</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label class="lbl" for="phone">Phone</label>
+          <input type="tel" id="phone" name="phone" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label class="lbl" for="billing-email">Billing email, if different</label>
+          <input type="email" id="billing-email" name="billing-email">
+          <p class="hint">Invoices begin with the 2027-28 school year, with advance notice.</p>
+          <p class="error-msg">Enter a valid email address, or leave blank.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>4. Choose and lock in your tier</legend>
+      <div class="offer">
+        <strong>Founding Partner offer:</strong> choose Silver or Gold by <strong>December 15, 2026</strong> and take <strong>25% off</strong>. That discounted price is locked for both of your grandfathered school years (2027-28 and 2028-29). After the deadline, upgrades are still available at standard pricing, and your Bronze rate stays locked. You are not charged anything today. Billing begins with the 2027-28 school year, with advance notice, and banners and plaques are installed that fall.
+      </div>
+      <div class="field">
+        <label class="lbl">Your tier <span class="req">*</span></label>
+        <div class="choice-grid" id="interest-grid">
+          <label class="choice">
+            <input type="radio" name="interest" value="bronze">
+            <span><span class="t">Bronze: $497/yr</span><span class="d">Card, sticker, website promotion, events</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="interest" value="silver">
+            <span><span class="t">Silver: $748/yr</span><span class="d">25% off $997. Adds a game banner and featured posts</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="interest" value="gold">
+            <span><span class="t">Gold: $1,498/yr</span><span class="d">25% off $1,997. Premium banner, plaque, and interview</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="interest" value="multi">
+            <span><span class="t">Multiple schools</span><span class="d">Talk to us about District Partner, Leader, or Champion</span></span>
+          </label>
+        </div>
+        <p class="hint">Your price is locked for 2027-28 and 2028-29 at whichever tier you choose here.</p>
+        <p class="error-msg">Choose a tier to lock in.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>5. Optional</legend>
+      <div class="field">
+        <label class="lbl" for="logo">Business logo</label>
+        <div class="file-drop">
+          For your membership card and Founding Partner listing
+          <input type="file" id="logo" name="logo" accept="image/*">
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="notes">Anything we should know?</label>
+        <textarea id="notes" name="notes" placeholder="For example: a change in ownership, a second location, or a question about your category"></textarea>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>6. Review and agree</legend>
+      <div class="sign-box">
+        <div class="field" id="agree-field">
+          <label class="check">
+            <input type="checkbox" id="agree" name="agree">
+            <span>I have read and agree to the <a id="agreement-link" href="#" target="_blank" rel="noopener">Shamrock Community Foundation Membership Agreement</a>, including the founding partner terms shown at the top of this page and the tier and locked price I selected above. <span class="req">*</span></span>
+          </label>
+          <p class="error-msg">Please confirm you agree to the membership agreement.</p>
+        </div>
+        <div class="field" id="license-field">
+          <label class="check">
+            <input type="checkbox" id="license" name="license">
+            <span>Shamrock may display my business name and logo on its website, sponsor listings, and marketing materials as a Founding Partner. <span class="req">*</span></span>
+          </label>
+          <p class="error-msg">Please confirm so we can list your business.</p>
+        </div>
+        <div class="row">
+          <div class="field" style="margin-bottom:0;">
+            <label class="lbl" for="signature">Type your full name as your signature <span class="req">*</span></label>
+            <input type="text" id="signature" name="signature" class="typed" autocomplete="name">
+            <p class="error-msg">Type your full name to sign.</p>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label class="lbl" for="sign-date">Date</label>
+            <input type="date" id="sign-date" name="sign-date" readonly>
+          </div>
+        </div>
+        <p class="legal-note">Typing your name above works as your electronic signature on the Membership Agreement.</p>
+      </div>
+    </fieldset>
+
+    <div class="submit-row">
+      <button type="submit" class="btn btn-primary" id="submit-btn">Confirm my membership</button>
+      <span class="submit-note">You'll get a confirmation email right away.</span>
+    </div>
+    <p class="form-error" id="form-error"></p>
+  </form>
+
+  <div class="success" id="success-panel">
+    <div class="seal">&#10003;</div>
+    <h2>You're confirmed as a Founding Partner</h2>
+    <p>Thank you for being part of Shamrock from the start. A confirmation is on its way to your inbox. Your tier and price are locked in for 2027-28 and 2028-29. We'll be in touch well before the 2027-28 school year with billing details.</p>
+  </div>
+</div>
+
+<script src="/tracking.js"></script>
+<script>
+  // ---------------------------------------------------------------------------
+  // CONFIGURE BEFORE SENDING THIS LINK TO ANYONE.
+  //
+  // ENDPOINT is where a confirmation is saved. While it is empty, the form
+  // deliberately refuses to submit: every field below is part of a signed
+  // membership agreement, and showing someone "you're confirmed" when nothing
+  // was stored would lose their signature and tell them an untruth.
+  //
+  // AGREEMENT_URL is the Membership Agreement people are agreeing to. While it
+  // is empty the checkbox text stays, but the link is inert rather than a
+  // dead link to a page that does not exist.
+  // ---------------------------------------------------------------------------
+  var ENDPOINT = '';
+  var AGREEMENT_URL = '';
+
+  var form = document.getElementById('confirm-form');
+  var successPanel = document.getElementById('success-panel');
+  var submitBtn = document.getElementById('submit-btn');
+  var formError = document.getElementById('form-error');
+
+  var agreementLink = document.getElementById('agreement-link');
+  if (AGREEMENT_URL) {
+    agreementLink.href = AGREEMENT_URL;
+  } else {
+    // Keep the wording, drop the link: an <a href="#"> that goes nowhere reads
+    // as broken, and a placeholder href would 404.
+    var plain = document.createElement('span');
+    plain.textContent = agreementLink.textContent;
+    agreementLink.parentNode.replaceChild(plain, agreementLink);
+  }
+
+  // Prefill from the unique link each member receives, e.g.
+  // founding-partner.html?id=OHS-014&biz=Acme%20Plumbing&name=Jo%20Rivera&email=jo@acme.com
+  var params = new URLSearchParams(window.location.search);
+  var map = { id:'member-id', biz:'biz-name', name:'contact-name', email:'email', cat:'category' };
+  Object.keys(map).forEach(function(key){
+    var val = params.get(key);
+    if (val) {
+      var el = document.getElementById(map[key]);
+      if (el) el.value = val;
+    }
+  });
+
+  var today = new Date();
+  var iso = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  document.getElementById('sign-date').value = iso;
+
+  function setInvalid(field, invalid){ field.classList.toggle('invalid', invalid); }
+
+  function showError(message){
+    formError.textContent = message;
+    formError.classList.add('show');
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    formError.classList.remove('show');
+    var valid = true;
+
+    ['biz-name','category','joined','ein','website','contact-name','email','signature'].forEach(function(id){
+      var input = document.getElementById(id);
+      var field = input.closest('.field');
+      var ok = input.value.trim().length > 0;
+      if (id === 'email' && ok) ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
+      if (id === 'website' && ok) ok = /^https?:\/\/.+/.test(input.value.trim());
+      setInvalid(field, !ok);
+      if (!ok) valid = false;
+    });
+
+    // Optional billing email: validate format only if filled in
+    var billing = document.getElementById('billing-email');
+    var billingOk = billing.value.trim() === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billing.value.trim());
+    setInvalid(billing.closest('.field'), !billingOk);
+    if (!billingOk) valid = false;
+
+    var interest = document.querySelector('input[name=interest]:checked');
+    setInvalid(document.getElementById('interest-grid').closest('.field'), !interest);
+    if (!interest) valid = false;
+
+    ['agree','license'].forEach(function(id){
+      var box = document.getElementById(id);
+      setInvalid(box.closest('.field'), !box.checked);
+      if (!box.checked) valid = false;
+    });
+
+    if (!valid) {
+      var first = form.querySelector('.invalid input, .invalid select, .invalid textarea');
+      if (first) first.focus();
+      return;
+    }
+
+    if (!ENDPOINT) {
+      showError('This confirmation page is not accepting submissions yet, so nothing was saved. ' +
+                'Please email theshamrockclub805@gmail.com and we will confirm your founding partner ' +
+                'terms by hand.');
+      return;
+    }
+
+    var payload = new FormData(form);
+
+    // Remembered link tags (see /tracking.js) ride along, same as the
+    // application form, so we can tell which outreach brought someone back.
+    var attribution = (window.ShamrockTracking && window.ShamrockTracking.get()) || {};
+    ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','referrer','landing_page']
+      .forEach(function(k){ if (attribution[k]) payload.append(k, attribution[k]); });
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Confirming...';
+
+    fetch(ENDPOINT, { method: 'POST', body: payload })
+      .then(function(res){
+        if (!res.ok) throw new Error('Server responded ' + res.status);
+        form.style.display = 'none';
+        successPanel.style.display = 'block';
+        successPanel.scrollIntoView({behavior:'smooth'});
+      })
+      .catch(function(){
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Confirm my membership';
+        showError('We could not save your confirmation just now, so nothing was recorded. ' +
+                  'Please try again, or email theshamrockclub805@gmail.com and we will take care of it.');
+      });
+  });
+</script>
+
+</body>
+</html>
