@@ -3,5 +3,5 @@
 # Both spellings are listed because Netlify serves the page at the extensionless
 # path and redirects the .html one to it.
 User-agent: *
-Disallow: /founding-partners-application
-Disallow: /founding-partners-application.html
+Disallow: /founding-partners-confirmation
+Disallow: /founding-partners-confirmation.html
