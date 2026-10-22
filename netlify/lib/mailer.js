@@ -193,6 +193,18 @@ function toText(options) {
 /**
  * Send one email. Returns {sent:true, id} or {sent:false, reason} — never throws.
  */
+/**
+ * Pull the bare address out of a MAIL_FROM, which may be "name@domain" or
+ * "Display Name <name@domain>". Returns '' if there is no address in there,
+ * which is the check that matters: the provider rejects anything else.
+ */
+function fromAddress(value) {
+  var raw = String(value || '').trim();
+  var angled = /<([^>]+)>\s*$/.exec(raw);
+  var candidate = (angled ? angled[1] : raw).trim();
+  return /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(candidate) ? candidate : '';
+}
+
 async function send(message) {
   var apiKey = env('RESEND_API_KEY');
   var from = env('MAIL_FROM');
@@ -201,6 +213,18 @@ async function send(message) {
     console.warn('Email not sent ("' + (message.subject || '') + '"): ' +
       'RESEND_API_KEY set = ' + Boolean(apiKey) + ', MAIL_FROM set = ' + Boolean(from) + '.');
     return { sent: false, reason: 'not configured' };
+  }
+
+  // MAIL_FROM holding something that is not an address has now cost three
+  // silent failures: the provider rejects every send and the reason is one
+  // line in a log nobody is watching. Say it plainly instead, and never echo
+  // the value - it has held an API key before.
+  var address = fromAddress(from);
+  if (!address) {
+    console.error('MAIL_FROM is not an email address, so no mail can be sent at all. ' +
+      'Expected "name@domain" or "Name <name@domain>". Fix MAIL_FROM in the Netlify ' +
+      'environment variables and redeploy. (Value withheld: it may be a secret.)');
+    return { sent: false, reason: 'MAIL_FROM is not an email address' };
   }
 
   var to = [].concat(message.to || []).filter(Boolean);
