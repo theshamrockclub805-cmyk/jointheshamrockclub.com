@@ -293,14 +293,14 @@ function clientFieldsFrom(app, packagesByName) {
  */
 async function sendApprovalEmail(token, app, clientId) {
   var f = app.fields || {};
-  if (f['Approval Email Sent At']) return false;
+  if (f['Approval Email Sent At']) return { sent: false, why: 'already sent' };
 
   var email = f['Email'];
   if (!email) {
     console.warn('Application ' + app.id + ' has no email address; approval not sent.');
-    return false;
+    return { sent: false, why: 'no email address on the application' };
   }
-  if (!clientId) return false;
+  if (!clientId) return { sent: false, why: 'no Client record to point the payment link at' };
 
   var pkg = f['Selected Package'];
   var category = f['Confirmed Category'];
@@ -317,7 +317,7 @@ async function sendApprovalEmail(token, app, clientId) {
     paymentUrl: mailer.SITE_URL + '/pay?client=' + clientId
   }));
 
-  if (!sent.sent) return false;
+  if (!sent.sent) return { sent: false, why: sent.reason + (sent.detail ? ': ' + sent.detail : '') };
 
   try {
     await airtable(token, LEAD_BASE + '/' + APPS_TABLE, {
@@ -330,7 +330,59 @@ async function sendApprovalEmail(token, app, clientId) {
     // Worst case this sends twice; better than never recording it at all.
     console.error('Approval email sent but could not be stamped on ' + app.id + ': ' + err.message);
   }
-  return true;
+  return { sent: true };
+}
+
+var HEALTH_TABLE = env('AIRTABLE_HEALTH_TABLE_ID') || 'tblJSPfLUVnwEObui';
+
+/**
+ * Rewrite this function's row in Automation Health on every run, including
+ * runs that do nothing.
+ *
+ * Without it there is no way to tell "the schedule is not firing" apart from
+ * "the schedule fired and had nothing to do" - both look like an empty field
+ * in Airtable, and that ambiguity has cost days on this project already. The
+ * result text carries the reason a send failed, so the next failure explains
+ * itself instead of needing a log nobody can reach.
+ *
+ * Best-effort: health reporting must never break the thing it reports on.
+ */
+async function reportHealth(token, result) {
+  try {
+    var summary = ['Ran at ' + new Date().toISOString() + ' UTC.'];
+    summary.push('Synced: ' + result.synced +
+      ', approval emails retried: ' + (result.approvalEmailsRetried || 0) +
+      ', failed: ' + result.failed +
+      ', held back by verification: ' + (result.blockedByVerification || 0) + '.');
+    (result.details || []).forEach(function (d) {
+      summary.push('- ' + d.application + ': email ' +
+        (d.approvalEmailed ? 'sent' : 'NOT sent (' + (d.why || 'unknown reason') + ')'));
+    });
+    if (result.error) summary.push('Error: ' + result.error);
+
+    var found = await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE +
+      '?maxRecords=1&filterByFormula=' + encodeURIComponent("{Function}='sync-approved'"));
+    var fields = {
+      'Function': 'sync-approved',
+      'Last Run At': new Date().toISOString(),
+      'Last Result': summary.join('\n').slice(0, 5000)
+    };
+    var existing = found.records && found.records[0];
+
+    if (existing) {
+      await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE, {
+        method: 'PATCH',
+        body: JSON.stringify({ records: [{ id: existing.id, fields: fields }] })
+      });
+    } else {
+      await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE, {
+        method: 'POST',
+        body: JSON.stringify({ records: [{ fields: fields }] })
+      });
+    }
+  } catch (err) {
+    console.error('Could not write Automation Health: ' + err.message);
+  }
 }
 
 async function syncOnce() {
@@ -378,9 +430,10 @@ async function syncOnce() {
         var existingClient = f['Hub Client Record'] || '';
         var resent = await sendApprovalEmail(token, app, existingClient);
         console.log('Retried the approval email for ' + app.id +
-          ' (client ' + existingClient + '): ' + (resent ? 'sent' : 'still failing'));
-        retriedEmail.push({ application: app.id, client: existingClient, approvalEmailed: resent });
-        if (!resent) failed.push(app.id);
+          ' (client ' + existingClient + '): ' + (resent.sent ? 'sent' : 'still failing - ' + resent.why));
+        retriedEmail.push({ application: app.id, client: existingClient,
+          approvalEmailed: resent.sent, why: resent.why });
+        if (!resent.sent) failed.push(app.id);
         continue;
       }
 
@@ -419,9 +472,9 @@ async function syncOnce() {
       // email goes last. It must not undo the sponsor's setup or block the next
       // application, so a failure here is left to the retry pass above.
       var emailed = await sendApprovalEmail(token, app, clientId);
-      if (!emailed) {
-        console.warn('Sponsor ' + app.id + ' is set up but their approval email did not send. ' +
-          'The next run will retry it; they have not been asked to pay yet.');
+      if (!emailed.sent) {
+        console.warn('Sponsor ' + app.id + ' is set up but their approval email did not send (' +
+          emailed.why + '). The next run will retry it; they have not been asked to pay yet.');
       }
 
       synced.push({
@@ -429,7 +482,8 @@ async function syncOnce() {
         client: clientId,
         business: slot.id,
         matchedExistingProspect: slot.matchedExistingProspect,
-        approvalEmailed: emailed
+        approvalEmailed: emailed.sent,
+        why: emailed.why
       });
     } catch (err) {
       console.error('Could not sync application ' + app.id + ': ' + err.message);
@@ -451,6 +505,8 @@ exports.handler = async function () {
   try {
     var result = await syncOnce();
     console.log('Approved-application sync:', JSON.stringify(result));
+    var healthToken = env('AIRTABLE_TOKEN');
+    if (healthToken) await reportHealth(healthToken, result);
     return {
       statusCode: result.ok ? 200 : 502,
       headers: { 'Content-Type': 'application/json' },

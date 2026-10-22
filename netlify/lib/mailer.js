@@ -256,9 +256,13 @@ async function send(message) {
     var body = await res.json().catch(function () { return {}; });
 
     if (!res.ok) {
+      // Carry the provider's own wording back to the caller. It names the real
+      // problem ("domain is not verified", "from is invalid") far better than a
+      // status code, and it is written for humans. It never contains the key.
+      var detail = String((body && (body.message || body.error || body.name)) || '').slice(0, 300);
       console.error('Email provider rejected "' + payload.subject + '": ' +
         res.status + ' ' + JSON.stringify(body).slice(0, 300));
-      return { sent: false, reason: 'provider ' + res.status };
+      return { sent: false, reason: 'provider ' + res.status, detail: detail };
     }
     return { sent: true, id: body.id };
   } catch (err) {
