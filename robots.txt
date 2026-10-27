@@ -1,7 +1,9 @@
-# Founding Partner confirmation is sent as a direct link to specific members.
-# It carries a noindex tag as well; this keeps well-behaved crawlers off it too.
-# Both spellings are listed because Netlify serves the page at the extensionless
-# path and redirects the .html one to it.
+# These pages are sent as direct links to specific people, never linked from
+# the site. They each carry a noindex tag as well; this keeps well-behaved
+# crawlers off them too. Both spellings are listed because Netlify serves the
+# extensionless path and redirects the .html one to it.
 User-agent: *
 Disallow: /founding-partners-confirmation
 Disallow: /founding-partners-confirmation.html
+Disallow: /sponsor-one-pager
+Disallow: /sponsor-one-pager.html

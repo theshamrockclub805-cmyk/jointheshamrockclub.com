@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sponsor One-Pager &mdash; The Shamrock Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#21105c;--blue-deep:#10052f;--blue-soft:#efedff;--red:#e10600;
+    --ink:#17142b;--muted:#5f5d73;--line:#dddbea;--gold:#caa12d;--green:#16713a;
+    --display:"Oswald",sans-serif;--body:"DM Sans",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eceaf4;color:var(--ink);font:13px/1.45 var(--body),system-ui,sans-serif}
+
+  /* One US Letter page. Everything below is sized to fit inside it. */
+  .sheet{width:8.5in;min-height:11in;margin:22px auto;background:#fff;padding:0.5in 0.55in;
+         box-shadow:0 14px 48px rgba(20,12,60,.18);display:flex;flex-direction:column}
+
+  .masthead{display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--blue);padding-bottom:11px}
+  .masthead img{height:52px;width:auto;border-radius:6px}
+  .masthead .who{flex:1}
+  .masthead h1{font-family:var(--display);font-size:25px;line-height:1;color:var(--blue);margin:0;text-transform:uppercase}
+  .masthead p{margin:3px 0 0;color:var(--muted);font-size:12px}
+  .masthead .status{text-align:right;font-size:10.5px;color:var(--muted);line-height:1.4}
+
+  .lead{margin:13px 0 0}
+  .lead h2{font-family:var(--display);font-size:21px;line-height:1.15;color:var(--blue);margin:0 0 5px}
+  .lead p{margin:0;font-size:12.5px;color:#39364f}
+
+  .why{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0 0}
+  .why div{background:var(--blue-soft);border-radius:9px;padding:9px 11px}
+  .why b{display:block;font-family:var(--display);color:var(--blue);font-size:12.5px;letter-spacing:.02em}
+  .why span{font-size:11.5px;color:#4a4761}
+
+  .excl{margin:12px 0 0;border-left:4px solid var(--red);background:#fff5f5;border-radius:0 8px 8px 0;padding:9px 13px}
+  .excl b{color:var(--red);font-family:var(--display);letter-spacing:.03em}
+  .excl span{font-size:12px;color:#3d3a52}
+
+  h3.sec{font-family:var(--display);text-transform:uppercase;letter-spacing:.1em;font-size:11.5px;
+         color:var(--red);margin:14px 0 7px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tier{border:1px solid var(--line);border-radius:11px;padding:11px 12px;display:flex;flex-direction:column}
+  .tier.pick{border:2px solid var(--blue);background:#fbfaff;position:relative}
+  .tier.pick:after{content:"MOST CHOSEN";position:absolute;top:-8px;right:9px;background:var(--red);color:#fff;
+    font-size:8.5px;font-weight:800;letter-spacing:.09em;border-radius:999px;padding:3px 8px}
+  .tier h4{font-family:var(--display);font-size:19px;color:var(--blue);margin:0}
+  .tier .amt{font-family:var(--display);font-size:27px;color:var(--blue);line-height:1;margin:4px 0 1px}
+  .tier .amt small{font-family:var(--body);font-size:11px;color:var(--muted);font-weight:700}
+  .tier .mo{font-size:10.5px;color:var(--muted);margin:0 0 7px}
+  .tier ul{list-style:none;margin:0;padding:0;flex:1}
+  .tier li{position:relative;padding:3px 0 3px 13px;font-size:10.8px;line-height:1.35;color:#3d3a52}
+  .tier li:before{content:"\2713";position:absolute;left:0;color:var(--red);font-weight:900;font-size:9px;top:4px}
+
+  .district{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .district div{border:1px dashed var(--line);border-radius:9px;padding:8px 11px}
+  .district b{font-family:var(--display);color:var(--blue);font-size:13px;display:block}
+  .district .amt{color:var(--red);font-weight:800;font-size:12.5px}
+  .district span{font-size:10.5px;color:var(--muted)}
+
+  .schools{font-size:11px;color:#4a4761;margin:7px 0 0;line-height:1.5}
+
+  .foot{margin-top:auto;padding-top:12px;border-top:3px solid var(--blue);display:flex;align-items:center;gap:14px}
+  .foot .cta{flex:1}
+  .foot .cta b{font-family:var(--display);font-size:16px;color:var(--blue);display:block;text-transform:uppercase}
+  .foot .cta span{font-size:11.5px;color:var(--muted)}
+  .foot .contact{text-align:right;font-size:11.5px;line-height:1.5}
+  .foot .contact a{color:var(--blue);font-weight:700;text-decoration:none}
+
+  .note{font-size:9.5px;color:#8a8799;margin:7px 0 0;line-height:1.4}
+
+  /* Screen-only helper so it is obvious how to turn this into a PDF. */
+  .howto{max-width:8.5in;margin:0 auto 10px;font-size:12px;color:#4a4761;background:#fffbe8;
+         border:1px solid #e8d99a;border-radius:9px;padding:9px 13px}
+  @media print{
+    @page{size:letter;margin:0}
+    body{background:#fff}
+    .sheet{width:auto;min-height:auto;margin:0;box-shadow:none;padding:0.45in 0.5in}
+    .howto{display:none}
+  }
+</style>
+</head>
+<body>
+
+<p class="howto"><strong>To hand this out:</strong> print it, or use your browser's Print &rarr; Save as PDF.
+It is built to fill exactly one US Letter page. This page is not linked anywhere on the site.</p>
+
+<div class="sheet">
+
+  <div class="masthead">
+    <img src="shamrock-logo.png" alt="The Shamrock Club">
+    <div class="who">
+      <h1>Sponsor a Local School</h1>
+      <p>Put your business in front of local families &mdash; and keep school programs running.</p>
+    </div>
+    <div class="status">
+      501(c)(3) nonprofit<br>EIN 61-2052400<br>jointheshamrockclub.com
+    </div>
+  </div>
+
+  <div class="lead">
+    <h2>Your business supports the youth. The community supports your business.</h2>
+    <p>The Shamrock Club connects local businesses with high school programs across Ventura County. You fund the
+    things schools struggle to pay for. In return you get year-round visibility with the families who already live
+    and shop near you &mdash; and the only business in your trade doing it at that school.</p>
+  </div>
+
+  <div class="why">
+    <div><b>Local, not broadcast</b><span>Your name in front of the families in your own service area, not a wasted regional audience.</span></div>
+    <div><b>Year-round, not one event</b><span>Banners, socials, newsletters and the sponsor directory, all season long.</span></div>
+    <div><b>Goodwill you can point to</b><span>A visible reason for neighbours to choose you over a chain.</span></div>
+  </div>
+
+  <div class="excl">
+    <b>One business per trade, per school.</b>
+    <span>&nbsp;Take the plumbing slot at a school and no other plumber can sponsor it alongside you. Categories are
+    first come, and held for as long as your sponsorship runs.</span>
+  </div>
+
+  <h3 class="sec">Single-school sponsorships &mdash; one school, one category, one year</h3>
+  <div class="tiers">
+    <div class="tier">
+      <h4>Bronze</h4>
+      <div class="amt">$497<small> / year</small></div>
+      <p class="mo">or $49/month &middot; save $91 a year</p>
+      <ul>
+        <li>Certificate of Partnership</li>
+        <li>Window / counter sticker</li>
+        <li>Invitations to all Shamrock events</li>
+        <li>Receipts for any gifts on top of membership</li>
+      </ul>
+    </div>
+    <div class="tier pick">
+      <h4>Silver</h4>
+      <div class="amt">$997<small> / year</small></div>
+      <p class="mo">or $99/month &middot; save $191 a year</p>
+      <ul>
+        <li>Everything in Bronze</li>
+        <li>3&prime; &times; 5&prime; banner at games and events</li>
+        <li>Year-round website and newsletter promotion</li>
+        <li>Weekly posts on Shamrock social media</li>
+        <li>Donor recognition page, digital and print</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <h4>Gold</h4>
+      <div class="amt">$1,997<small> / year</small></div>
+      <p class="mo">or $199/month &middot; save $391 a year</p>
+      <ul>
+        <li>Everything in Silver</li>
+        <li>4&prime; &times; 6&prime; premium banner placement</li>
+        <li>Logo on Shamrock marketing materials</li>
+        <li>Media feature: video interview, written profile and a live spotlight on Oxnard USA</li>
+        <li>Engraved plaque for your own premises</li>
+        <li>Discounted big-screen ad spots at games</li>
+        <li>VIP seating at all Shamrock mixers</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sec">Sponsoring more than one school</h3>
+  <div class="district">
+    <div><b>District Partner</b><span class="amt">$3,197/yr</span><br><span>2 schools, Gold-level benefits at each</span></div>
+    <div><b>District Leader</b><span class="amt">$5,997/yr</span><br><span>5 schools, Gold-level benefits across all</span></div>
+    <div><b>District Champion</b><span class="amt">$9,997/yr</span><br><span>All 10 schools, district-wide reach</span></div>
+  </div>
+
+  <p class="schools"><strong>Schools in the network:</strong> Camarillo &middot; Channel Islands &middot; Del Sol
+  &middot; Hueneme &middot; Oxnard &middot; Pacifica &middot; Rancho Campana &middot; Rio Mesa &middot; Santa Clara
+  &middot; St. Bonaventure</p>
+
+  <div class="foot">
+    <div class="cta">
+      <b>Claim your category</b>
+      <span>Pick your school and tier at jointheshamrockclub.com, or ask us which categories are still open at the
+      school nearest you. Approval usually takes two to three business days.</span>
+    </div>
+    <div class="contact">
+      <a href="mailto:staff@jointheshamrockclub.com">staff@jointheshamrockclub.com</a><br>
+      jointheshamrockclub.com<br>
+      <span style="color:#8a8799">The Shamrock Club &middot; Ventura County, CA</span>
+    </div>
+  </div>
+
+  <p class="note">Membership fees are not tax-deductible charitable contributions, because sponsors receive
+  advertising and promotional benefits in return. Separate donations are a different matter and are receipted.
+  Monthly plans are a 12-month commitment and stop automatically after the 12th payment.</p>
+
+</div>
+</body>
+</html>
