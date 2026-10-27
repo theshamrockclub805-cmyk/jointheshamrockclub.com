@@ -360,26 +360,22 @@ async function reportHealth(token, result) {
     });
     if (result.error) summary.push('Error: ' + result.error);
 
-    var found = await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE +
-      '?maxRecords=1&filterByFormula=' + encodeURIComponent("{Function}='sync-approved'"));
-    var fields = {
-      'Function': 'sync-approved',
-      'Last Run At': new Date().toISOString(),
-      'Last Result': summary.join('\n').slice(0, 5000)
-    };
-    var existing = found.records && found.records[0];
-
-    if (existing) {
-      await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE, {
-        method: 'PATCH',
-        body: JSON.stringify({ records: [{ id: existing.id, fields: fields }] })
-      });
-    } else {
-      await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE, {
-        method: 'POST',
-        body: JSON.stringify({ records: [{ fields: fields }] })
-      });
-    }
+    // One upsert rather than a lookup plus a write. This runs on every
+    // scheduled tick, so a spare call here is ~2,900 wasted Airtable requests
+    // a month - enough to matter against a plan's monthly cap.
+    await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        performUpsert: { fieldsToMergeOn: ['Function'] },
+        records: [{
+          fields: {
+            'Function': 'sync-approved',
+            'Last Run At': new Date().toISOString(),
+            'Last Result': summary.join('\n').slice(0, 5000)
+          }
+        }]
+      })
+    });
   } catch (err) {
     console.error('Could not write Automation Health: ' + err.message);
   }
