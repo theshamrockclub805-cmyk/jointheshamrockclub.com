@@ -11,3 +11,5 @@ Disallow: /marketing-plan
 Disallow: /marketing-plan.html
 Disallow: /rewards-questions
 Disallow: /rewards-questions.html
+Disallow: /segment-why-im-in
+Disallow: /segment-why-im-in.html
