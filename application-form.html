@@ -738,7 +738,8 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       if (submitButton) submitButton.disabled = false;
       if (submitNote) submitNote.textContent = defaultNote;
       if (window.ShamrockTracking) window.ShamrockTracking.event('generate_lead', {
-        tier: selectedTier(), heard: data.heard || ''
+        form: 'application', tier: selectedTier(), heard: data.heard || '',
+        filed: !!results[1]
       });
       layout.style.display = 'none';
       successPanel.style.display = 'block';

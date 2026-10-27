@@ -975,6 +975,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       if (!results[1]) {
         console.warn('Inquiry was captured by Netlify Forms but not filed in Airtable.');
       }
+      // Fires whether or not Airtable accepted it, so analytics stays an
+      // independent count of what people actually sent. Without it there is
+      // no way to tell afterwards that an inquiry was lost to an outage.
+      // Only non-identifying fields: names, emails and phone numbers must
+      // never be sent to analytics.
+      if (window.ShamrockTracking) window.ShamrockTracking.event('generate_lead', {
+        form: 'inquiry', tier: data.interest || '', filed: !!results[1]
+      });
       form.reset();
       button.disabled = false;
       setNote('Thanks! Your request is in. We\u2019ll reach out during the window you picked.', 'is-success');
