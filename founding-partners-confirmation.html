@@ -6,7 +6,7 @@
 <!-- Reachable only by the direct link we send each founding member: it is not
      linked from anywhere on the site, and these keep it out of search results. -->
 <meta name="robots" content="noindex, nofollow, noarchive">
-<title>Shamrock Community Foundation — Founding Partner confirmation</title>
+<title>The Shamrock Club — Founding Partner confirmation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -115,7 +115,7 @@
 
 <header>
   <div class="wrap nav">
-    <a class="brand" href="https://jointheshamrockclub.com" aria-label="Shamrock Club home"><img src="shamrock-logo.png" alt="Shamrock Community Foundation"></a>
+    <a class="brand" href="https://jointheshamrockclub.com" aria-label="Shamrock Club home"><img src="shamrock-logo.png" alt="The Shamrock Club"></a>
     <span class="tagline">Founding Partner confirmation</span>
   </div>
 </header>
@@ -287,7 +287,7 @@
         <div class="field" id="agree-field">
           <label class="check">
             <input type="checkbox" id="agree" name="agree">
-            <span>I have read and agree to the <a id="agreement-link" href="#" target="_blank" rel="noopener">Shamrock Community Foundation Membership Agreement</a>, including the founding partner terms shown at the top of this page and the tier and locked price I selected above. <span class="req">*</span></span>
+            <span>I have read and agree to the <a id="agreement-link" href="#" target="_blank" rel="noopener">Shamrock Club Membership Agreement</a>, including the founding partner terms shown at the top of this page and the tier and locked price I selected above. <span class="req">*</span></span>
           </label>
           <p class="error-msg">Please confirm you agree to the membership agreement.</p>
         </div>
@@ -335,7 +335,7 @@
   // pointing at a page that does not exist.
   // ---------------------------------------------------------------------------
   var ENDPOINT = '/.netlify/functions/founding-confirm';
-  var AGREEMENT_URL = '';
+  var AGREEMENT_URL = '/membership-agreement';
 
   var form = document.getElementById('confirm-form');
   var successPanel = document.getElementById('success-panel');
