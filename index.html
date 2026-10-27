@@ -92,8 +92,12 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdro
 
 /* pricing */
 .pricing{background:var(--bg)}
-.pricing-toggle{display:inline-flex;align-items:center;gap:8px;background:#ebe8f7;border-radius:999px;padding:7px 12px;margin-top:18px;font-size:13px;font-weight:800;color:var(--blue)}
-.pricing-toggle span{background:white;padding:6px 11px;border-radius:999px}
+.pricing-toggle{display:inline-flex;align-items:center;gap:4px;background:#ebe8f7;border-radius:999px;padding:5px;margin-top:18px;font-size:13px;font-weight:800;color:var(--blue)}
+.pricing-toggle button{font:inherit;font-weight:800;color:var(--blue);background:transparent;border:0;cursor:pointer;padding:9px 18px;border-radius:999px;transition:background .18s,box-shadow .18s}
+.pricing-toggle button[aria-pressed="true"]{background:#fff;box-shadow:0 2px 8px rgba(30,20,80,.14)}
+.pricing-toggle button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.pricing-toggle .save-hint{padding:0 14px 0 8px;color:var(--red);font-size:12px}
+.save-badge{display:inline-block;background:#e8f6ec;color:#16713a;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:800}
 .package-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
 .package{background:white;border:1px solid var(--line);border-radius:24px;padding:31px;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(30,20,80,.05)}
 .package.featured{border:2px solid var(--blue);box-shadow:var(--shadow);transform:translateY(-10px);position:relative}
@@ -102,7 +106,7 @@ header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdro
 .package h3{font-size:36px;color:var(--blue);margin:8px 0}
 .price{font-family:var(--display);font-size:54px;color:var(--blue);line-height:1;margin:14px 0 4px}
 .price small{font-family:var(--body);font-size:16px;color:var(--muted);font-weight:700}
-.monthly{font-size:13px;color:var(--muted);margin-bottom:18px}
+.monthly{font-size:13px;color:var(--muted);margin-bottom:18px;min-height:21px}
 .monthly strong{color:var(--blue);font-weight:800}
 .package ul{list-style:none;padding:0;margin:6px 0 28px}
 .package li{position:relative;padding:9px 0 9px 28px;border-top:1px solid #efedf5;font-size:14px}
@@ -484,6 +488,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 }
 
 </style>
+
 <script src="/tracking.js"></script>
 </head>
 <body>
@@ -629,14 +634,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       <p class="eyebrow">Single-school sponsorships</p>
       <h2>One school. One category. A visible local partnership.</h2>
       <p>Straightforward pricing, published up front. Every tier is one school, one category, for one year &mdash; so you can see exactly what you get before you commit. Pay for the year up front and get two months free, or spread it across 12 monthly payments.</p>
-      <div class="pricing-toggle"><span>Pay yearly or monthly</span> Per school</div>
+      <div class="pricing-toggle" role="group" aria-label="Choose how to pay">
+        <button type="button" id="plan-yearly" aria-pressed="true">Pay yearly</button>
+        <button type="button" id="plan-monthly" aria-pressed="false">Pay monthly</button>
+        <span class="save-hint" id="save-hint">Yearly saves about 16%</span>
+      </div>
     </div>
 
     <div class="package-grid">
       <article class="package">
         <h3>Bronze</h3>
-        <div class="price">$497 <small>/ year</small></div>
-        <p class="monthly">or <strong>$49/month</strong> for 12 months · save $91 paying yearly</p>
+        <div class="price" data-yearly="$497" data-monthly="$49" data-yearly-unit="/ year" data-monthly-unit="/ month">$497 <small>/ year</small></div>
+        <p class="monthly" data-yearly='or <strong>$49/month</strong> · <span class="save-badge">save $91 a year</span>' data-monthly='$497 a year if paid up front · <span class="save-badge">save $91</span>'>or <strong>$49/month</strong> · <span class="save-badge">save $91 a year</span></p>
         <ul>
           <li>Certificate of Partnership recognizing your support of Shamrock schools</li>
           <li>Promotional window/counter sticker</li>
@@ -649,8 +658,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
       <article class="package featured">
         <h3>Silver</h3>
-        <div class="price">$997 <small>/ year</small></div>
-        <p class="monthly">or <strong>$99/month</strong> for 12 months · save $191 paying yearly</p>
+        <div class="price" data-yearly="$997" data-monthly="$99" data-yearly-unit="/ year" data-monthly-unit="/ month">$997 <small>/ year</small></div>
+        <p class="monthly" data-yearly='or <strong>$99/month</strong> · <span class="save-badge">save $191 a year</span>' data-monthly='$997 a year if paid up front · <span class="save-badge">save $191</span>'>or <strong>$99/month</strong> · <span class="save-badge">save $191 a year</span></p>
         <ul>
           <li>Everything in Bronze</li>
           <li>3' × 5' banner displayed at school games + events</li>
@@ -664,8 +673,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
       <article class="package">
         <h3>Gold</h3>
-        <div class="price">$1,997 <small>/ year</small></div>
-        <p class="monthly">or <strong>$199/month</strong> for 12 months · save $391 paying yearly</p>
+        <div class="price" data-yearly="$1,997" data-monthly="$199" data-yearly-unit="/ year" data-monthly-unit="/ month">$1,997 <small>/ year</small></div>
+        <p class="monthly" data-yearly='or <strong>$199/month</strong> · <span class="save-badge">save $391 a year</span>' data-monthly='$1,997 a year if paid up front · <span class="save-badge">save $391</span>'>or <strong>$199/month</strong> · <span class="save-badge">save $391 a year</span></p>
         <ul>
           <li>Everything in Silver</li>
           <li>Upgrade to 4' × 6' premium banner placement</li>
@@ -1014,5 +1023,47 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   }
 </script>
 
+<script>
+/* Yearly / monthly pricing toggle.
+ *
+ * The prices live in data attributes on the cards rather than in here, so the
+ * numbers are visible in the markup next to the tier they belong to and there
+ * is one place to change them. With JavaScript off the cards still show the
+ * yearly price and the monthly alternative, which is the state the HTML ships
+ * in - the toggle only ever swaps between two things that are both already
+ * true. */
+(function () {
+  var yearlyBtn = document.getElementById('plan-yearly');
+  var monthlyBtn = document.getElementById('plan-monthly');
+  var hint = document.getElementById('save-hint');
+  if (!yearlyBtn || !monthlyBtn) return;
+
+  function show(plan) {
+    document.querySelectorAll('.price[data-yearly]').forEach(function (el) {
+      el.firstChild.nodeValue = el.getAttribute('data-' + plan) + ' ';
+      var unit = el.querySelector('small');
+      if (unit) unit.textContent = el.getAttribute('data-' + plan + '-unit');
+    });
+    document.querySelectorAll('.monthly[data-yearly]').forEach(function (el) {
+      el.innerHTML = el.getAttribute('data-' + plan);
+    });
+    yearlyBtn.setAttribute('aria-pressed', String(plan === 'yearly'));
+    monthlyBtn.setAttribute('aria-pressed', String(plan === 'monthly'));
+    hint.textContent = plan === 'yearly'
+      ? 'Yearly saves about 16%'
+      : '12 payments, then it stops';
+    try { localStorage.setItem('shamrock-plan', plan); } catch (e) { /* private mode */ }
+  }
+
+  yearlyBtn.addEventListener('click', function () { show('yearly'); });
+  monthlyBtn.addEventListener('click', function () { show('monthly'); });
+
+  // Remember what they were last looking at, so comparing tiers across visits
+  // does not keep resetting.
+  try {
+    if (localStorage.getItem('shamrock-plan') === 'monthly') show('monthly');
+  } catch (e) { /* private mode */ }
+})();
+</script>
 </body>
 </html>
