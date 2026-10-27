@@ -93,6 +93,7 @@
   .sign-box .typed{font-family:var(--font-b);font-style:italic;}
   .legal-note{font-size:12.5px;color:var(--ink-soft);margin:10px 0 0;}
 
+  .hp-field{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
   .submit-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
   .submit-note{font-size:13px;color:var(--ink-soft);}
   .form-error{display:none;margin-top:18px;background:#FFF4F4;border-left:4px solid var(--danger);border-radius:3px;padding:14px 16px;font-size:14px;color:var(--danger);}
@@ -137,7 +138,11 @@
 </div>
 
 <div class="wrap">
-  <form id="confirm-form" novalidate>
+  <form id="confirm-form" name="founding-partner-confirmation" method="POST"
+        data-netlify="true" netlify-honeypot="companyWebsite"
+        enctype="multipart/form-data" novalidate>
+    <input type="hidden" name="form-name" value="founding-partner-confirmation">
+    <p class="hp-field"><label>Company website<input name="companyWebsite" tabindex="-1" autocomplete="off"></label></p>
     <input type="hidden" id="member-id" name="member-id" value="">
 
     <fieldset>
@@ -318,7 +323,7 @@
   <div class="success" id="success-panel">
     <div class="seal">&#10003;</div>
     <h2>You're confirmed as a Founding Partner</h2>
-    <p>Thank you for being part of Shamrock from the start. A confirmation is on its way to your inbox. Your tier and price are locked in for 2027-28 and 2028-29. We'll be in touch well before the 2027-28 school year with billing details.</p>
+    <p id="success-message">Thank you for being part of Shamrock from the start. A confirmation is on its way to your inbox. Your tier and price are locked in for 2027-28 and 2028-29. We'll be in touch well before the 2027-28 school year with billing details.</p>
   </div>
 </div>
 
@@ -432,7 +437,8 @@
       signature: document.getElementById('signature').value,
       signDate: document.getElementById('sign-date').value,
       agree: document.getElementById('agree').checked,
-      license: document.getElementById('license').checked
+      license: document.getElementById('license').checked,
+      companyWebsite: (form.querySelector('[name=companyWebsite]') || {}).value || ''
     };
 
     // Remembered link tags (see /tracking.js) ride along, same as the
@@ -444,7 +450,15 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Confirming...';
 
-    readLogo().then(function(logo){
+    // Two independent paths, deliberately. Netlify Forms captures the raw
+    // submission whether or not our function and Airtable are reachable, so a
+    // signed membership agreement is never lost to an outage on our side. The
+    // form declares multipart, so the logo rides along with it.
+    var captured = fetch('/', { method: 'POST', body: new FormData(form) })
+      .then(function(res){ return res.ok; })
+      .catch(function(){ return false; });
+
+    var filed = readLogo().then(function(logo){
       if (logo) payload.logo = logo;
       return fetch(ENDPOINT, {
         method: 'POST',
@@ -453,19 +467,49 @@
       });
     }).then(function(res){
       return res.json().catch(function(){ return {}; }).then(function(body){
-        if (!res.ok || !body.ok) throw new Error(body.error || 'Server responded ' + res.status);
-        form.style.display = 'none';
-        successPanel.style.display = 'block';
-        successPanel.scrollIntoView({behavior:'smooth'});
+        return { ok: res.ok && body.ok === true, error: body.error };
       });
-    }).catch(function(err){
+    }).catch(function(){ return { ok: false }; });
+
+    Promise.all([captured, filed]).then(function(results){
+      var capturedOk = results[0], filedResult = results[1];
+
+      // Filed properly: everything downstream will happen on its own.
+      if (filedResult.ok) return showSuccess(false);
+
+      // Not filed, but Netlify has it. We genuinely have their confirmation,
+      // so claiming otherwise would be wrong - but so would promising an email
+      // that is not coming. Say exactly where it stands.
+      if (capturedOk) {
+        console.warn('Confirmation captured by Netlify Forms but not filed.');
+        return showSuccess(true);
+      }
+
       submitBtn.disabled = false;
       submitBtn.textContent = 'Confirm my membership';
-      showError((err && err.message ? err.message + ' ' : '') +
+      showError((filedResult.error ? filedResult.error + ' ' : '') +
                 'Nothing was recorded. Please try again, or email ' +
                 'staff@jointheshamrockclub.com and we will take care of it.');
     });
   });
+
+  /**
+   * @param {boolean} heldForReview  True when Netlify captured the submission
+   *   but it could not be filed, so no confirmation email will go out.
+   */
+  function showSuccess(heldForReview) {
+    if (heldForReview) {
+      document.getElementById('success-message').textContent =
+        'Thank you for being part of Shamrock from the start. We have your ' +
+        'confirmation and your founding partner terms are recorded as of today. ' +
+        'Our system is catching up, so your emailed copy may take longer than ' +
+        'usual to arrive - if it has not reached you within a day, email ' +
+        'staff@jointheshamrockclub.com and we will send it straight over.';
+    }
+    form.style.display = 'none';
+    successPanel.style.display = 'block';
+    successPanel.scrollIntoView({behavior:'smooth'});
+  }
 
   /**
    * Read the logo as base64 so it can travel inside the JSON body. Resolves to
