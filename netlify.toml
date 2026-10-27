@@ -9,13 +9,18 @@
 
 # Airtable cannot write across bases on its own, so approved applications are
 # pulled into the Client Deliverables Hub on a schedule instead.
+#
+# Both jobs below fire every 30 minutes but only work every third tick, giving
+# a 90-minute cycle; cron cannot express that on its own. Skipped ticks make no
+# Airtable calls, which is what keeps the two of them inside the monthly API
+# cap. The offsets are in netlify/lib/cadence.js, not here.
 [functions."sync-approved"]
-  schedule = "*/15 * * * *"
+  schedule = "0,30 * * * *"
 
 # Sponsors are welcomed once their payment lands, whether they paid by card,
-# cash or cheque. Offset from the approval sync so the two do not collide.
+# cash or cheque. Offset one slot from the approval sync so the two interleave.
 [functions."send-welcome"]
-  schedule = "7,22,37,52 * * * *"
+  schedule = "0,30 * * * *"
 
 # Short, sendable payment link: /pay?client=recXXXXXXXXXXXXXX
 # Shows the annual/monthly chooser, then sends the sponsor to Stripe Checkout.

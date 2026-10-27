@@ -18,6 +18,7 @@
  *   AIRTABLE_HUB_BASE_ID, AIRTABLE_HUB_CLIENTS_TABLE_ID
  */
 
+var cadence = require('../lib/cadence');
 var mailer = require('../lib/mailer');
 var emails = require('../lib/emails');
 
@@ -152,6 +153,13 @@ async function runOnce() {
 }
 
 exports.handler = async function () {
+  // Offset one slot from sync-approved so the two 90-minute jobs interleave
+  // rather than firing together. See lib/cadence.js.
+  if (!cadence.isWorkingTick(new Date(), 1)) {
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ ok: true, skipped: 'not a 90-minute tick' }) };
+  }
+
   try {
     var result = await runOnce();
     if (result.welcomed || result.skipped) console.log('Welcome emails:', JSON.stringify(result));

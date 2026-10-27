@@ -30,6 +30,7 @@
  *   AIRTABLE_HUB_PACKAGES_TABLE_ID
  */
 
+var cadence = require('../lib/cadence');
 var mailer = require('../lib/mailer');
 var emails = require('../lib/emails');
 
@@ -498,6 +499,14 @@ async function syncOnce() {
 }
 
 exports.handler = async function () {
+  // Scheduled every 30 minutes; works every third tick. See lib/cadence.js -
+  // cron cannot express 90 minutes, and a skipped tick must cost no Airtable
+  // calls, because the monthly cap is the binding constraint here.
+  if (!cadence.isWorkingTick(new Date(), 0)) {
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ ok: true, skipped: 'not a 90-minute tick' }) };
+  }
+
   try {
     var result = await syncOnce();
     console.log('Approved-application sync:', JSON.stringify(result));
