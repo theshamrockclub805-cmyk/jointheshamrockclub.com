@@ -7,3 +7,5 @@ Disallow: /founding-partners-confirmation
 Disallow: /founding-partners-confirmation.html
 Disallow: /sponsor-one-pager
 Disallow: /sponsor-one-pager.html
+Disallow: /marketing-plan
+Disallow: /marketing-plan.html
