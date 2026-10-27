@@ -9,3 +9,5 @@ Disallow: /sponsor-one-pager
 Disallow: /sponsor-one-pager.html
 Disallow: /marketing-plan
 Disallow: /marketing-plan.html
+Disallow: /rewards-questions
+Disallow: /rewards-questions.html
