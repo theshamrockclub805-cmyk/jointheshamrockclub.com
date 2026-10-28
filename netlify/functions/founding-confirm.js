@@ -38,6 +38,12 @@ var FOUNDING_TABLE = env('AIRTABLE_FOUNDING_TABLE_ID') || 'tblipio92Obv0kw3k';
 var MAX_BODY_BYTES = 5 * 1024 * 1024;
 var MAX_LOGO_BYTES = 3 * 1024 * 1024;
 
+// The version of /membership-agreement that this code was written against.
+// Recorded on every confirmation so that, if the terms change later, we can
+// still say which version a given member agreed to. Bump it here and on the
+// agreement page together - they are the same fact in two places.
+var AGREEMENT_VERSION = '1.0';
+
 // The founding-partner prices, held for 2027-28 and 2028-29. Kept here rather
 // than taken from the browser: a posted price is a price anyone can edit.
 var TIERS = {
@@ -111,6 +117,7 @@ function buildRecord(data, tier, now) {
     'Logo & Name Use Consent': data.license === true,
     'Member ID': clean(data.memberId, 100),
     'Confirmation Status': 'Submitted',
+    'Agreement Version': AGREEMENT_VERSION,
     'Verification Status': 'Not Started',
     'Submitted At': now.toISOString(),
     'UTM Source': clean(data.utm_source, 200),
@@ -306,6 +313,7 @@ exports._internals = {
   cleanLicense: cleanLicense,
   oneOf: oneOf,
   TIERS: TIERS,
+  AGREEMENT_VERSION: AGREEMENT_VERSION,
   CATEGORIES: CATEGORIES,
   YEARS: YEARS
 };
