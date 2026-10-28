@@ -351,9 +351,9 @@ var HEALTH_TABLE = env('AIRTABLE_HEALTH_TABLE_ID') || 'tblJSPfLUVnwEObui';
 async function reportHealth(token, result) {
   try {
     var summary = ['Ran at ' + new Date().toISOString() + ' UTC.'];
-    summary.push('Synced: ' + result.synced +
+    summary.push('Synced: ' + (result.synced || 0) +
       ', approval emails retried: ' + (result.approvalEmailsRetried || 0) +
-      ', failed: ' + result.failed +
+      ', failed: ' + (result.failed || 0) +
       ', held back by verification: ' + (result.blockedByVerification || 0) + '.');
     (result.details || []).forEach(function (d) {
       summary.push('- ' + d.application + ': email ' +
@@ -390,7 +390,9 @@ async function syncOnce() {
   }
 
   var all = await findApproved(token);
-  if (all.length === 0) return { ok: true, synced: 0 };
+  if (all.length === 0) {
+    return { ok: true, synced: 0, approvalEmailsRetried: 0, failed: 0, blockedByVerification: 0 };
+  }
 
   var approved = [];
   var blocked = [];
@@ -406,7 +408,10 @@ async function syncOnce() {
   });
 
   if (approved.length === 0) {
-    return { ok: true, synced: 0, blockedByVerification: blocked.length };
+    return {
+      ok: true, synced: 0, approvalEmailsRetried: 0, failed: 0,
+      blockedByVerification: blocked.length
+    };
   }
 
   var packagesByName = await packageIdsByName(token);
