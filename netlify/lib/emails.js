@@ -183,10 +183,52 @@ function foundingPartnerConfirmed(data) {
   };
 }
 
+/**
+ * 5. Someone asked to be contacted rather than applying.
+ *
+ * Nothing automated follows a conversation request - a person has to call.
+ * So this email's only job is to close the loop: confirm we have them, say
+ * when to expect a human, and give them a way to reach us sooner if they
+ * want. It promises nothing the automation is going to deliver, because the
+ * automation is not going to deliver anything.
+ */
+function inquiryReceived(data) {
+  var blocks = [];
+  if (data.businessName) blocks.push({ label: 'Business', value: data.businessName });
+  if (data.interest) blocks.push({ label: 'You asked about', value: data.interest });
+  if (data.when) blocks.push({ label: 'Best time to reach you', value: data.when });
+
+  return {
+    to: data.email,
+    subject: 'We got your message — The Shamrock Club',
+    preheader: 'A real person will call you, not a sequence of emails.',
+    heading: 'Thanks — we will be in touch',
+    intro: [
+      'Hi ' + firstName(data.contactName) + ', thanks for getting in touch about sponsoring a local ' +
+      'high school program.',
+      'Someone from our team will contact you in the window you picked, usually within one to two ' +
+      'business days.'
+    ],
+    blocks: blocks.concat([
+      { text: 'A couple of things worth knowing before we speak:' },
+      { bullets: [
+        'Sponsorships are exclusive by category at each school - one plumber, one salon, one ' +
+          'restaurant per school - so the slot you want may be worth asking about early.',
+        'Single-school sponsorships start at $497 a year, and nothing is owed until you decide to ' +
+          'go ahead.'
+      ] }
+    ]),
+    ctaUrl: SITE_URL + '/#pricing',
+    ctaLabel: 'See the sponsorship levels',
+    footerNote: 'Would rather talk sooner? Just reply to this email and we will call you back.'
+  };
+}
+
 module.exports = {
   applicationReceived: applicationReceived,
   approvedWithPaymentLink: approvedWithPaymentLink,
   paymentWelcome: paymentWelcome,
   foundingPartnerConfirmed: foundingPartnerConfirmed,
+  inquiryReceived: inquiryReceived,
   _internals: { money: money, firstName: firstName }
 };

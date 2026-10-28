@@ -346,6 +346,18 @@ exports.handler = async function (event) {
     if (sent.sent && recordId) {
       await stampConfirmation(token, recordId);
     }
+  } else {
+    // Inquiries used to send nothing at all, to anyone. Someone asking to be
+    // called had no way of knowing we had received them, and no record of it
+    // in their own inbox - which is how a corporate enquiry sat unclaimed for
+    // six days without anyone, inside or outside, noticing.
+    await mailer.send(emails.inquiryReceived({
+      email: email,
+      contactName: clean(data.name, 200),
+      businessName: clean(data.business, 200),
+      interest: clean(data.interest, 200),
+      when: contactWindowLabel(clean(data.bestDay, 10), clean(data.bestTime, 10))
+    }));
   }
 
   return json(200, { ok: true, id: recordId });
