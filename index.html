@@ -713,7 +713,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <li>10% discount on Oxnard USA advertising</li>
           </ul>
           <p class="corporate-savings">Separately: <s>$3,994</s> <strong>Save $797 &mdash; 20% off</strong></p>
-          <a class="corporate-apply" href="application-form.html?tier=district-partner">Apply for District Partner &rarr;</a>
+          <a class="corporate-apply" href="#inquire" data-tier="district-partner">Talk to us about District Partner &rarr;</a>
         </article>
 
         <article class="corporate-card">
@@ -729,7 +729,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <li>20% discount on Oxnard USA advertising</li>
           </ul>
           <p class="corporate-savings">Separately: <s>$9,985</s> <strong>Save $3,988 &mdash; 40% off</strong></p>
-          <a class="corporate-apply" href="application-form.html?tier=district-leader">Apply for District Leader &rarr;</a>
+          <a class="corporate-apply" href="#inquire" data-tier="district-leader">Talk to us about District Leader &rarr;</a>
         </article>
 
         <article class="corporate-card">
@@ -748,7 +748,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
             <li>30% discount on Oxnard USA advertising</li>
           </ul>
           <p class="corporate-savings">Separately: <s>$21,967</s> <strong>Save $11,970 &mdash; 54% off</strong></p>
-          <a class="corporate-apply" href="application-form.html?tier=district-champion">Apply for District Champion &rarr;</a>
+          <a class="corporate-apply" href="#inquire" data-tier="district-champion">Talk to us about District Champion &rarr;</a>
         </article>
       </div>
       <div class="corporate-actions">
@@ -1063,6 +1063,35 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
   try {
     if (localStorage.getItem('shamrock-plan') === 'monthly') show('monthly');
   } catch (e) { /* private mode */ }
+})();
+</script>
+<script>
+/* The district tiers are negotiated, not self-serve: a near-$10k sponsorship
+ * across eleven schools needs a conversation about which schools and what
+ * fulfilment looks like, not a form submission. These buttons go to the
+ * enquiry form and carry the tier with them, so the team knows which one
+ * prompted the enquiry without having to ask. */
+(function () {
+  var form = document.getElementById('inquiry-form');
+  if (!form) return;
+  document.querySelectorAll('.corporate-apply[data-tier]').forEach(function (link) {
+    link.addEventListener('click', function () {
+      var tier = link.getAttribute('data-tier').split('-').map(function (w) {
+        return w.charAt(0).toUpperCase() + w.slice(1);
+      }).join(' ');
+
+      var interest = form.querySelector('[name=interest]');
+      if (interest) {
+        Array.prototype.forEach.call(interest.options, function (o) {
+          if (/corporate/i.test(o.text)) interest.value = o.value;
+        });
+      }
+      var message = form.querySelector('[name=message]');
+      if (message && !message.value.trim()) {
+        message.value = 'I am interested in ' + tier + '.';
+      }
+    });
+  });
 })();
 </script>
 </body>
