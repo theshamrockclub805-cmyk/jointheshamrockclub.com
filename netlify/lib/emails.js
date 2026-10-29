@@ -149,9 +149,9 @@ function foundingPartnerConfirmed(data) {
     { text: 'To be clear about what happens next, and when:' },
     { bullets: [
       'Now through spring 2027: no cost. You stay in the Oxnard High School network.',
-      'The 2027-28 school year: billing begins, with advance notice. Banners and plaques go up that fall.',
-      '2027-28 and 2028-29: your price stays ' + (price ? 'at ' + price : 'locked') +
-        ', even if our pricing goes up.',
+      'The 2027-28 school year: billing begins, with advance notice, ' +
+        (price ? 'at your locked price of ' + price : 'at your locked price') +
+        ' - even if our pricing has gone up by then. Banners and plaques go up that fall.',
       'Ongoing: Founding Partner recognition on our website and sponsor listings.'
     ] }
   ];

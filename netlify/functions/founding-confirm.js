@@ -42,9 +42,9 @@ var MAX_LOGO_BYTES = 3 * 1024 * 1024;
 // Recorded on every confirmation so that, if the terms change later, we can
 // still say which version a given member agreed to. Bump it here and on the
 // agreement page together - they are the same fact in two places.
-var AGREEMENT_VERSION = '1.0';
+var AGREEMENT_VERSION = '1.1';
 
-// The founding-partner prices, held for 2027-28 and 2028-29. Kept here rather
+// The founding-partner prices, held for the 2027-28 school year. Kept here rather
 // than taken from the browser: a posted price is a price anyone can edit.
 var TIERS = {
   'bronze': { label: 'Bronze',           price: 497 },
