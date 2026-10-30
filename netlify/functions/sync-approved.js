@@ -148,13 +148,27 @@ function quote(value) {
   return "'" + String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 
-/** Map the Sales Funnel base's school names to their record IDs. */
+/**
+ * Map the Sales Funnel base's school names to {id, hold}.
+ *
+ * hold is the reason a school is not currently open to new applications, or ''
+ * when it is. Any Application Status beginning "On hold" counts, so a new hold
+ * reason can be added in Airtable without touching this code.
+ */
 async function schoolIdsByName(token) {
   var data = await airtable(token, SALES_BASE + '/' + SCHOOLS_TBL + '?pageSize=100');
   var byName = {};
   (data.records || []).forEach(function (rec) {
-    var name = rec.fields && rec.fields['School Name'];
-    if (name) byName[String(name).trim().toLowerCase()] = rec.id;
+    var f = rec.fields || {};
+    var name = f['School Name'];
+    if (!name) return;
+    var status = f['Application Status'];
+    var statusName = status && typeof status === 'object' ? status.name : status;
+    statusName = String(statusName || '').trim();
+    byName[String(name).trim().toLowerCase()] = {
+      id: rec.id,
+      hold: /^on hold/i.test(statusName) ? statusName : ''
+    };
   });
   return byName;
 }
@@ -178,11 +192,21 @@ async function recordSchoolSlot(token, app, schoolsByName) {
 
   var assigned = Array.isArray(f['Assigned Schools']) ? f['Assigned Schools'] : [];
   var schoolIds = assigned.map(function (schoolName) {
-    var id = schoolsByName[String(schoolName).trim().toLowerCase()];
+    var school = schoolsByName[String(schoolName).trim().toLowerCase()];
     // A school that cannot be resolved would silently leave its category
     // unblocked, so this fails rather than registering a partial slot.
-    if (!id) throw new Error('no school named "' + schoolName + '" in the Sales Funnel base');
-    return id;
+    if (!school) throw new Error('no school named "' + schoolName + '" in the Sales Funnel base');
+    // A school on hold has its slots reserved for people we have not finished
+    // signing - founding partners at Oxnard, as of October 2026. Approving an
+    // application for it would quietly spend a slot that is already promised,
+    // and category exclusivity makes that unwindable: the founder arrives to
+    // find their trade taken at their own school. Hold the whole application
+    // instead. It retries every run and goes through the moment the hold lifts.
+    if (school.hold) {
+      throw new Error(schoolName + ' is not open to new applications (' +
+        school.hold + '), so this application is held rather than given a slot there');
+    }
+    return school.id;
   });
 
   var category = f['Confirmed Category'];

@@ -106,7 +106,8 @@ In the **Business Sales Funnel Manager** base, on **Schools**:
 | Sponsors Committed | Signed sponsors attached to this school. Counts Closed Won only. |
 | Slots Remaining | Capacity minus committed. Sort on it to see where there is room to sell. |
 | Categories Taken | Which trades are already held here. Compare against Confirmed Category. |
-| Availability | ✅ N of M slots open / ⛔ Full / ⚙️ No capacity set. |
+| Availability | 🚫 On hold / ✅ N of M slots open / ⛔ Full / ⚙️ No capacity set. |
+| Application Status | Open to applications, or on hold because the slots are reserved for a group we have not finished signing. A hold beats the slot maths. |
 
 A prospect being talked to never occupies a slot or blocks a category — only a
 **Closed Won** business does. So the pipeline can never make a school look
@@ -122,7 +123,21 @@ base and confirm both:
 
 Then tick check 6. Never tick it on the applicant's say-so.
 
-**Set Sponsor Capacity on all nine schools before relying on this.** Until you
+**A school on hold fails check 6 even with slots free.** Availability reads
+"🚫 On hold" when its slots are reserved for people we have not finished
+signing, and the bracketed count tells you how many are being held. Do not
+assign that school to a new application: either place the applicant at another
+school, or hold the application until the reservation clears.
+
+> **Oxnard High School is on hold as of 30 October 2026.** It is the flagship
+> school our founding partners are attached to, and they get first dibs on its
+> category slots. Clear the hold once founding partner registrations are
+> finalised — set Application Status back to *Open to applications*, and add
+> Oxnard High School back to the **Assigned Schools** options on Membership
+> Applications. Founding Partners keeps its own Assigned Schools list, which
+> still has Oxnard and should: that is where the founders go.
+
+**Set Sponsor Capacity on all 11 schools before relying on this.** Until you
 do, every school reads "No capacity set" and the capacity half of the check
 tells you nothing.
 
@@ -141,7 +156,7 @@ three bases can be traced to each other.
 
 **Not automatic.** The availability *lookup* is still a person's job: the three
 bases cannot link to each other, so **Assigned Schools** is a list of names
-rather than a live link, and nothing computes check 6 for you. With ten schools
+rather than a live link, and nothing computes check 6 for you. With 11 schools
 that is a few seconds of scrolling — and a human confirming a school is free
 before a $9,997 promise is arguably where a human belongs.
 
