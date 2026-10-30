@@ -45,7 +45,7 @@ var PACKAGES = {
   'gold':              { label: 'Gold',              amount: 1997, schools: 1 },
   'district-partner':  { label: 'District Partner',  amount: 3197, schools: 2 },
   'district-leader':   { label: 'District Leader',   amount: 5997, schools: 5 },
-  'district-champion': { label: 'District Champion', amount: 9997, schools: 10 },
+  'district-champion': { label: 'District Champion', amount: 9997, schools: 11 },
   'undecided':         { label: 'Not sure yet',      amount: null, schools: null }
 };
 
@@ -205,6 +205,22 @@ function buildInquiryRecord(data, now) {
   return fields;
 }
 
+/**
+ * The form asks for the school and the program separately: the school is a
+ * dropdown of the real network, the program is free text and optional. Airtable
+ * keeps both in one field, 'Preferred School or Program', which is what it has
+ * always been named. Compose the line here rather than in the browser, so a
+ * submission that arrives without our JavaScript - the Netlify Forms fallback -
+ * reads the same way.
+ *
+ * Either part may be missing: no preference at all is a legitimate answer, and
+ * the form says we will recommend a school in that case.
+ */
+function schoolPreference(school, program) {
+  var parts = [clean(school, 200), clean(program, 200)].filter(Boolean);
+  return parts.join(' \u2014 ');
+}
+
 function buildApplicationRecord(data, now) {
   var pkg = PACKAGES[clean(data.tier, 40)] || PACKAGES['undecided'];
 
@@ -227,7 +243,7 @@ function buildApplicationRecord(data, now) {
     'City': clean(data.city, 200),
     'Website': clean(data.website, 500),
     'Contact Role': clean(data.role, 200),
-    'Preferred School or Program': clean(data.school, 300),
+    'Preferred School or Program': schoolPreference(data.school, data.program),
     'How Did You Hear': clean(data.heard, 200),
     'Referred By': clean(data.referredBy, 200),
     'Business License or EIN': cleanLicense(data.license),
@@ -340,7 +356,7 @@ exports.handler = async function (event) {
       contactName: clean(data.contactName, 200),
       businessName: clean(data.bizName, 200),
       packageName: pkg.label,
-      school: clean(data.school, 300)
+      school: schoolPreference(data.school, data.program)
     }));
 
     if (sent.sent && recordId) {

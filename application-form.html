@@ -429,9 +429,42 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
         <fieldset>
           <legend><b>04</b> School preference</legend>
           <div class="field">
-            <label for="school">Preferred school and program</label>
-            <input type="text" id="school" name="school" placeholder="School name and the program you'd like to support">
-            <p class="hint">Leave blank and we'll recommend a school in the network that fits your area and category.</p>
+            <label for="school">Preferred school</label>
+            <select id="school" name="school">
+              <option value="">No preference &mdash; recommend one for me</option>
+              <option>Camarillo High School</option>
+              <option>Channel Islands High School</option>
+              <option>Del Sol High School</option>
+              <option>Hueneme High School</option>
+              <!-- Oxnard's category slots are reserved for founding partners until
+                   those registrations are finalised. A disabled option greys out in
+                   every browser and is never submitted, so it cannot be chosen by
+                   accident. It stays listed rather than hidden: the school is
+                   visibly part of the network, and the hint tells people how to ask
+                   for it anyway, which keeps the demand instead of losing it.
+                   value="" matters: `disabled` stops a person picking it, but script
+                   can still force selectedIndex onto a disabled option, and then the
+                   label would be posted. An empty value makes that forced case read
+                   as "no preference" instead of posting the label as a school name.
+                   This is presentation only. The gates that matter are staff-side:
+                   Assigned Schools in Airtable, and the hold sync-approved enforces
+                   before it will spend a slot. -->
+              <option value="" disabled>Oxnard High School &mdash; temporarily unavailable</option>
+              <option>Pacifica High School</option>
+              <option>Rancho Campana High School</option>
+              <option>Rio Mesa High School</option>
+              <option>Santa Clara High School</option>
+              <option>St. Bonaventure High School</option>
+              <option>Ventura High School</option>
+            </select>
+            <p class="hint">Leave this on &ldquo;no preference&rdquo; and we'll recommend a school that fits your area and
+            category. Oxnard High School is temporarily unavailable while we confirm its founding sponsors &mdash; if
+            that's the one you want, say so in the notes below and we'll come back to you the moment it opens.</p>
+          </div>
+          <div class="field">
+            <label for="program">Program you'd like to support</label>
+            <input type="text" id="program" name="program" placeholder="Football, band, robotics, girls' soccer...">
+            <p class="hint">Optional. Leave it blank if you have no preference, or would rather talk it through first.</p>
           </div>
           <div class="field">
             <label for="heard">How did you hear about Shamrock Club? <span class="req">*</span></label>
@@ -619,6 +652,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       bestDay: data.bestDay || '',
       bestTime: data.bestTime || '',
       school: data.school || '',
+      program: data.program || '',
       heard: data.heard || '',
       referredBy: data.referredBy || '',
       license: data.license || '',
