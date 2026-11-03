@@ -136,6 +136,15 @@ school, or hold the application until the reservation clears.
 > Oxnard High School back to the **Assigned Schools** options on Membership
 > Applications. Founding Partners keeps its own Assigned Schools list, which
 > still has Oxnard and should: that is where the founders go.
+>
+> **Before lifting the hold, every approved founder must have a Sales Funnel
+> Record.** That field on Founding Partners holds the id of their Businesses
+> row, and that row is the only thing that blocks their category against
+> another applicant. The sync fills it in on its own, every 90 minutes — but
+> blank means a founder is confirmed on paper and holding nothing. Sort
+> Founding Partners by that column and check it is empty for nobody approved,
+> then lift the hold. Lift it first and a walk-in can be sold a category a
+> founder already signed for, which category exclusivity makes unwindable.
 
 **Set Sponsor Capacity on all 11 schools before relying on this.** Until you
 do, every school reads "No capacity set" and the capacity half of the check

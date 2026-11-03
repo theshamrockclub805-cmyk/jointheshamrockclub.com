@@ -47,6 +47,7 @@ function env(name) {
 
 var LEAD_BASE   = env('AIRTABLE_BASE_ID') || 'appiaYFwD340oK6uQ';
 var APPS_TABLE  = env('AIRTABLE_APPLICATION_TABLE_ID') || 'tbl79enOo6bpusR00';
+var FOUNDERS_TABLE = env('AIRTABLE_FOUNDERS_TABLE_ID') || 'tblipio92Obv0kw3k';
 var SALES_BASE  = env('AIRTABLE_SALES_BASE_ID') || 'app6eNzSFWvGNwt33';
 var BUSINESSES_TBL = env('AIRTABLE_SALES_BUSINESSES_TABLE_ID') || 'tblGeTs8cOonu2J3F';
 var SCHOOLS_TBL = env('AIRTABLE_SALES_SCHOOLS_TABLE_ID') || 'tblVcza0S27DK9pkQ';
@@ -97,8 +98,16 @@ function selectName(value) {
  * disagree about whether an application is releasable.
  */
 function isVerified(app) {
-  var f = app.fields || {};
+  return fieldsAreVerified(app.fields || {});
+}
 
+/**
+ * The gate itself, on a bare fields object. Founding Partners carries the same
+ * six checks, the same Verification Status, Confirmed Category and Assigned
+ * Schools, under the same names - deliberately, so one gate governs both and
+ * neither path can drift into being the lenient one.
+ */
+function fieldsAreVerified(f) {
   if (selectName(f['Verification Status']) !== 'Passed') return false;
   if (!selectName(f['Confirmed Category'])) return false;
 
@@ -130,6 +139,102 @@ async function findApproved(token) {
   );
   var data = await airtable(token, LEAD_BASE + '/' + APPS_TABLE + '?filterByFormula=' + formula + '&pageSize=50');
   return data.records || [];
+}
+
+/**
+ * Approved founding partners who are not yet holding their slot.
+ *
+ * Founders sign on /founding-partners-confirmation, which writes to its own
+ * table: they never pass through Membership Applications, so nothing else in
+ * this sync would ever see them. Until they are written into Businesses their
+ * category at their school is held by nobody, and the only thing standing
+ * between a founder and losing their trade to a walk-in is the school hold.
+ *
+ * They are not billed yet - the free year runs to spring 2027 - so this does
+ * NOT create a Client, send a payment link, or email them. It does one job:
+ * make the reservation real in the base that enforces exclusivity.
+ */
+async function findApprovedFounders(token) {
+  var formula = encodeURIComponent(
+    "AND({Confirmation Status}='Approved', {Sales Funnel Record}='')"
+  );
+  var data = await airtable(token,
+    LEAD_BASE + '/' + FOUNDERS_TABLE + '?filterByFormula=' + formula + '&pageSize=50');
+  return data.records || [];
+}
+
+/**
+ * Present a founding partner in the shape recordSchoolSlot already understands,
+ * rather than teaching that function about a second record type. The two tables
+ * name the same facts differently: Business Name vs Company Name, Contact Name
+ * vs Applicant Name.
+ */
+function founderAsSponsor(founder) {
+  var f = founder.fields || {};
+  return {
+    id: founder.id,
+    fields: {
+      'Company Name': f['Business Name'],
+      'Applicant Name': f['Contact Name'],
+      'Assigned Schools': f['Assigned Schools'],
+      'Confirmed Category': f['Confirmed Category'],
+      'Email': f['Email'],
+      'Phone': f['Phone']
+    }
+  };
+}
+
+/**
+ * Register every approved, verified founding partner in the Sales Funnel so
+ * their category is actually held. Returns counts for the health row.
+ *
+ * Each founder is independent: one that fails must not stop the rest, because
+ * the whole point is to close the window in which a category sits unclaimed.
+ */
+async function registerFounders(token, getSchools) {
+  var founders = await findApprovedFounders(token);
+  if (founders.length === 0) return { registered: 0, blocked: 0, failed: 0 };
+
+  var registered = 0, blocked = 0, failed = 0;
+  var schoolsByName = null;
+
+  for (var i = 0; i < founders.length; i++) {
+    var founder = founders[i];
+    var name = (founder.fields && founder.fields['Business Name']) || founder.id;
+
+    if (!fieldsAreVerified(founder.fields || {})) {
+      blocked++;
+      console.warn('Founding partner "' + name + '" (' + founder.id + ') is approved but ' +
+        'verification has not passed, so no slot was taken for them. Finish the six checks ' +
+        'to release it.');
+      continue;
+    }
+
+    try {
+      // Fetched on first real need, so a tick with nothing verified costs one
+      // Airtable call rather than two. The monthly cap is the binding limit.
+      if (!schoolsByName) schoolsByName = await getSchools();
+      var slot = await recordSchoolSlot(token, founderAsSponsor(founder), schoolsByName, {
+        allowHeldSchools: true,
+        label: 'founding partner confirmation'
+      });
+      await airtable(token, LEAD_BASE + '/' + FOUNDERS_TABLE, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          records: [{ id: founder.id, fields: { 'Sales Funnel Record': slot.id || '' } }],
+          typecast: true
+        })
+      });
+      registered++;
+      console.log('Founding partner "' + name + '" now holds their category (business ' +
+        slot.id + ').');
+    } catch (err) {
+      failed++;
+      console.error('Could not register founding partner ' + founder.id + ': ' + err.message);
+    }
+  }
+
+  return { registered: registered, blocked: blocked, failed: failed };
 }
 
 /** Map the Hub's package names to their record IDs, so "Gold" resolves to a link. */
@@ -185,7 +290,8 @@ async function schoolIdsByName(token) {
  * Idempotent by design: running it twice updates the same record. That is why
  * it runs before the Client is created, which is not idempotent.
  */
-async function recordSchoolSlot(token, app, schoolsByName) {
+async function recordSchoolSlot(token, app, schoolsByName, options) {
+  var opts = options || {};
   var f = app.fields || {};
   var name = String(f['Company Name'] || f['Applicant Name'] || '').trim();
   if (!name) throw new Error('application has no business name to register');
@@ -202,7 +308,10 @@ async function recordSchoolSlot(token, app, schoolsByName) {
     // and category exclusivity makes that unwindable: the founder arrives to
     // find their trade taken at their own school. Hold the whole application
     // instead. It retries every run and goes through the moment the hold lifts.
-    if (school.hold) {
+    // Founding partners are the people a hold is reserving the slots FOR, so
+    // the hold must not block them - that would be the gate locking out the
+    // only party entitled to walk through it. Everyone else waits.
+    if (school.hold && !opts.allowHeldSchools) {
       throw new Error(schoolName + ' is not open to new applications (' +
         school.hold + '), so this application is held rather than given a slot there');
     }
@@ -228,10 +337,12 @@ async function recordSchoolSlot(token, app, schoolsByName) {
     SALES_BASE + '/' + BUSINESSES_TBL + '?maxRecords=1&filterByFormula=' + formula);
   var existing = (found.records || [])[0];
 
+  var source = opts.label || 'sponsorship application';
+
   if (existing) {
     // Keep whatever the outbound team already wrote in Notes; just append.
-    var note = 'Closed via the sponsorship application form on ' +
-      new Date().toISOString().slice(0, 10) + ' (application ' + app.id + ').';
+    var note = 'Closed via the ' + source + ' on ' +
+      new Date().toISOString().slice(0, 10) + ' (record ' + app.id + ').';
     var priorNotes = (existing.fields && existing.fields['Notes']) || '';
     fields['Notes'] = priorNotes ? priorNotes + '\n\n' + note : note;
 
@@ -242,7 +353,7 @@ async function recordSchoolSlot(token, app, schoolsByName) {
     return { id: existing.id, matchedExistingProspect: true };
   }
 
-  fields['Notes'] = 'Created automatically from the approved sponsorship application ' +
+  fields['Notes'] = 'Created automatically from the approved ' + source + ' ' +
     app.id + '. Holds this sponsor\'s school slot and category exclusivity.';
 
   var created = await airtable(token, SALES_BASE + '/' + BUSINESSES_TBL, {
@@ -379,6 +490,11 @@ async function reportHealth(token, result) {
       ', approval emails retried: ' + (result.approvalEmailsRetried || 0) +
       ', failed: ' + (result.failed || 0) +
       ', held back by verification: ' + (result.blockedByVerification || 0) + '.');
+    if (result.foundersRegistered || result.foundersBlocked) {
+      summary.push('Founding partners registered in the Sales Funnel: ' +
+        (result.foundersRegistered || 0) +
+        ', held back by verification: ' + (result.foundersBlocked || 0) + '.');
+    }
     (result.details || []).forEach(function (d) {
       summary.push('- ' + d.application + ': email ' +
         (d.approvalEmailed ? 'sent' : 'NOT sent (' + (d.why || 'unknown reason') + ')'));
@@ -413,9 +529,28 @@ async function syncOnce() {
     return { ok: false, error: 'Airtable is not configured' };
   }
 
+  // One schools fetch per run at most, shared by both paths.
+  var cachedSchools = null;
+  var getSchools = async function () {
+    if (!cachedSchools) cachedSchools = await schoolIdsByName(token);
+    return cachedSchools;
+  };
+
+  // Founders first, and unconditionally: they are the party a school hold is
+  // reserving slots for, so every tick they sit unregistered is a tick their
+  // category could be promised to somebody else the moment the hold lifts.
+  // This runs even when no application is waiting, which is the common case.
+  var founderCounts = await registerFounders(token, getSchools);
+
   var all = await findApproved(token);
   if (all.length === 0) {
-    return { ok: true, synced: 0, approvalEmailsRetried: 0, failed: 0, blockedByVerification: 0 };
+    return {
+      ok: founderCounts.failed === 0,
+      synced: 0, approvalEmailsRetried: 0, failed: founderCounts.failed,
+      blockedByVerification: 0,
+      foundersRegistered: founderCounts.registered,
+      foundersBlocked: founderCounts.blocked
+    };
   }
 
   var approved = [];
@@ -433,13 +568,16 @@ async function syncOnce() {
 
   if (approved.length === 0) {
     return {
-      ok: true, synced: 0, approvalEmailsRetried: 0, failed: 0,
-      blockedByVerification: blocked.length
+      ok: founderCounts.failed === 0,
+      synced: 0, approvalEmailsRetried: 0, failed: founderCounts.failed,
+      blockedByVerification: blocked.length,
+      foundersRegistered: founderCounts.registered,
+      foundersBlocked: founderCounts.blocked
     };
   }
 
   var packagesByName = await packageIdsByName(token);
-  var schoolsByName = await schoolIdsByName(token);
+  var schoolsByName = await getSchools();
   var synced = [];
   var retriedEmail = [];
   var failed = [];
@@ -518,11 +656,13 @@ async function syncOnce() {
   }
 
   return {
-    ok: failed.length === 0,
+    ok: failed.length === 0 && founderCounts.failed === 0,
     synced: synced.length,
     approvalEmailsRetried: retriedEmail.length,
-    failed: failed.length,
+    failed: failed.length + founderCounts.failed,
     blockedByVerification: blocked.length,
+    foundersRegistered: founderCounts.registered,
+    foundersBlocked: founderCounts.blocked,
     details: synced.concat(retriedEmail)
   };
 }
@@ -562,7 +702,10 @@ exports._internals = {
   clientFieldsFrom: clientFieldsFrom,
   env: env,
   isVerified: isVerified,
+  fieldsAreVerified: fieldsAreVerified,
   recordSchoolSlot: recordSchoolSlot,
+  registerFounders: registerFounders,
+  founderAsSponsor: founderAsSponsor,
   quote: quote,
   REQUIRED_CHECKS: REQUIRED_CHECKS
 };
