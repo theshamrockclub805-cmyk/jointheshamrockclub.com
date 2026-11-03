@@ -33,6 +33,7 @@ const CLIENT = {
   selectedPackage: 'fldMAkim7WYoVm5Y5',
   paymentStatus: 'fldneS99GflXEcrJK',
   clientStatus: 'fldJBjJ95380HeCFS',
+  membershipPhase: 'fld68iwxK6zZJ03lB',
   paymentMethod: 'fld2g8Uh2x6KurQiF',
   amountPaid: 'flds3O7dHPm6v2E7r',
   paymentDate: 'fldnpjZCXBmvjK4LQ',

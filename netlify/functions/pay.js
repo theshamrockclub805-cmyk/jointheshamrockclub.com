@@ -8,6 +8,19 @@
 const { stripe, SITE_URL: SITE, TABLES, CLIENT, PACKAGE, getRecord } = require('../lib/shared');
 const COMMITMENT_MONTHS = 12;
 
+/**
+ * True when this client owes nothing right now, so no checkout may be started.
+ *
+ * Two independent signals, either of which is enough: the explicit "Not yet
+ * billed" payment status, and the founding-partner free-year phase. They are
+ * set together today, but a human editing one and not the other must not be
+ * able to open a payment window by accident.
+ */
+function notYetBillable(fields) {
+  return fields[CLIENT.paymentStatus] === 'Not yet billed' ||
+         String(fields[CLIENT.membershipPhase] || '').indexOf('free year') !== -1;
+}
+
 exports.handler = async (event) => {
   const q = event.queryStringParameters || {};
   const clientId = q.client || '';
@@ -33,6 +46,28 @@ exports.handler = async (event) => {
 
   if (c[CLIENT.paymentStatus] === 'Paid') {
     return page(200, "You're all paid up ☘️", 'This sponsorship has already been paid. Thank you!');
+  }
+
+  // Nothing is owed yet, so there is nothing to charge.
+  //
+  // Founding partners are free from signing until the 2027-28 school year -
+  // section 4 of the Membership Agreement they signed says so - and their
+  // Client is created the moment they are approved, more than a year before
+  // the first invoice. The record therefore exists, has a package, and has a
+  // working /pay URL derivable from its id. Without this, anyone who sent or
+  // guessed that link could take a founder's money a year early, and a refund
+  // does not undo having asked.
+  //
+  // Checked on the server rather than only hidden in Airtable: the Payment
+  // Link column blanks for these clients, but a blank column is a display,
+  // not a lock.
+  if (notYetBillable(c)) {
+    return page(200, 'Nothing to pay yet',
+      "You're confirmed as a Shamrock Founding Partner and there is nothing to pay. " +
+      'Your membership is free through the end of the spring 2027 semester, and billing ' +
+      'begins with the 2027-28 school year at your locked price \u2014 we will write to you ' +
+      'well before the first invoice. If you think this is wrong, just reply to your ' +
+      'confirmation email.');
   }
 
   try {
