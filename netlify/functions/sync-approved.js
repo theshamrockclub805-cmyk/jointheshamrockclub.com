@@ -258,6 +258,7 @@ async function registerFounders(token, getSchools, getPackages) {
   }
 
   var registered = 0, clientsCreated = 0, blocked = 0, failed = 0;
+  var problems = [];
   var schoolsByName = null;
 
   for (var i = 0; i < founders.length; i++) {
@@ -317,6 +318,11 @@ async function registerFounders(token, getSchools, getPackages) {
       }
     } catch (err) {
       failed++;
+      // The health row is the only place anyone actually reads, so the reason
+      // has to travel with the count. A bare "failed: 1" sends someone to
+      // Netlify logs they cannot reach, which is the whole thing this table
+      // exists to avoid.
+      problems.push({ founder: name, id: founder.id, why: err.message });
       console.error('Could not set up founding partner ' + founder.id + ': ' + err.message);
       // Whatever did succeed is still worth recording, so the next run picks up
       // only the step that is actually missing instead of redoing both.
@@ -334,7 +340,7 @@ async function registerFounders(token, getSchools, getPackages) {
   }
 
   return { registered: registered, clientsCreated: clientsCreated,
-           blocked: blocked, failed: failed };
+           blocked: blocked, failed: failed, problems: problems };
 }
 
 /** Map the Hub's package names to their record IDs, so "Gold" resolves to a link. */
@@ -596,6 +602,9 @@ async function reportHealth(token, result) {
         ', free-year Clients created: ' + (result.founderClientsCreated || 0) +
         ', held back by verification: ' + (result.foundersBlocked || 0) + '.');
     }
+    (result.founderProblems || []).forEach(function (p) {
+      summary.push('- founding partner ' + p.founder + ' (' + p.id + '): ' + p.why);
+    });
     (result.details || []).forEach(function (d) {
       summary.push('- ' + d.application + ': email ' +
         (d.approvalEmailed ? 'sent' : 'NOT sent (' + (d.why || 'unknown reason') + ')'));
@@ -656,7 +665,8 @@ async function syncOnce() {
       blockedByVerification: 0,
       foundersRegistered: founderCounts.registered,
       founderClientsCreated: founderCounts.clientsCreated,
-      foundersBlocked: founderCounts.blocked
+      foundersBlocked: founderCounts.blocked,
+      founderProblems: founderCounts.problems
     };
   }
 
@@ -680,7 +690,8 @@ async function syncOnce() {
       blockedByVerification: blocked.length,
       foundersRegistered: founderCounts.registered,
       founderClientsCreated: founderCounts.clientsCreated,
-      foundersBlocked: founderCounts.blocked
+      foundersBlocked: founderCounts.blocked,
+      founderProblems: founderCounts.problems
     };
   }
 
@@ -772,6 +783,7 @@ async function syncOnce() {
     foundersRegistered: founderCounts.registered,
     founderClientsCreated: founderCounts.clientsCreated,
     foundersBlocked: founderCounts.blocked,
+    founderProblems: founderCounts.problems,
     details: synced.concat(retriedEmail)
   };
 }
