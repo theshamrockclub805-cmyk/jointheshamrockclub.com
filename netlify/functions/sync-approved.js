@@ -155,8 +155,13 @@ async function findApproved(token) {
  * make the reservation real in the base that enforces exclusivity.
  */
 async function findApprovedFounders(token) {
+  // Either step still outstanding, not just the first. Stamping the slot and
+  // then failing to create the Client would otherwise drop the founder out of
+  // this query for good - the same hole that once left approved applicants
+  // holding a slot and never being emailed.
   var formula = encodeURIComponent(
-    "AND({Confirmation Status}='Approved', {Sales Funnel Record}='')"
+    "AND({Confirmation Status}='Approved', " +
+      "OR({Sales Funnel Record}='', {Hub Client Record}=''))"
   );
   var data = await airtable(token,
     LEAD_BASE + '/' + FOUNDERS_TABLE + '?filterByFormula=' + formula + '&pageSize=50');
@@ -185,17 +190,74 @@ function founderAsSponsor(founder) {
 }
 
 /**
+ * The Client record for a founding partner in their free year.
+ *
+ * Deliberately not billed: Payment Status is "Not yet billed", so the
+ * paid-deliverable automations do not fire and nobody is asked for money they
+ * do not owe until the 2027-28 school year. Membership Phase is what marks
+ * them as publishable anyway, because Founding Partner recognition was
+ * promised from signing rather than from payment.
+ *
+ * Show in Directory is left off on purpose. It is the human opt-in that
+ * actually publishes a sponsor, and it should be ticked once somebody has
+ * looked at the logo and the name - which is one of the free-year tasks.
+ */
+function clientFieldsFromFounder(founder, packagesByName) {
+  var f = founder.fields || {};
+  var legal = f['Business Name'] || '';
+  var fields = {
+    'Business Name': f['Display Name'] || legal || 'Unnamed founding partner',
+    'Company Name': legal,
+    'Contact Email': f['Email'] || '',
+    'Client Status': 'Onboarding',
+    'Payment Status': 'Not yet billed',
+    'Membership Phase': 'Founding partner \u2014 free year'
+  };
+
+  if (f['Phone']) fields['Phone Number'] = f['Phone'];
+
+  var schools = Array.isArray(f['Assigned Schools']) ? f['Assigned Schools'].join(', ') : '';
+  if (schools) fields['Sponsored School(s)'] = schools;
+
+  var tier = selectName(f['Selected Tier']);
+  if (tier) {
+    // "Multiple schools" has no package and no locked price yet - that one is
+    // a conversation, so leaving the link empty is the honest result.
+    var id = packagesByName[String(tier).trim().toLowerCase()];
+    if (id) fields['Selected Package'] = [id];
+  }
+
+  var notes = ['Created automatically from an approved founding partner confirmation.'];
+  if (f['Contact Name']) notes.push('Contact: ' + f['Contact Name']);
+  if (f['Member ID']) notes.push('Member ID: ' + f['Member ID']);
+  if (selectName(f['Confirmed Category'])) notes.push('Category: ' + selectName(f['Confirmed Category']));
+  if (f['Website']) notes.push('Website: ' + f['Website']);
+  if (f['Locked Annual Price']) {
+    notes.push('Locked price: $' + f['Locked Annual Price'] +
+      '/year, held for the 2027-28 school year.');
+  }
+  notes.push('Free through the end of the spring 2027 semester. Billing begins with the ' +
+    '2027-28 school year, and advance notice is owed before the first invoice.');
+  notes.push('Founding partner record: ' + founder.id);
+  fields['Notes'] = notes.join('\n');
+
+  return fields;
+}
+
+/**
  * Register every approved, verified founding partner in the Sales Funnel so
  * their category is actually held. Returns counts for the health row.
  *
  * Each founder is independent: one that fails must not stop the rest, because
  * the whole point is to close the window in which a category sits unclaimed.
  */
-async function registerFounders(token, getSchools) {
+async function registerFounders(token, getSchools, getPackages) {
   var founders = await findApprovedFounders(token);
-  if (founders.length === 0) return { registered: 0, blocked: 0, failed: 0 };
+  if (founders.length === 0) {
+    return { registered: 0, clientsCreated: 0, blocked: 0, failed: 0 };
+  }
 
-  var registered = 0, blocked = 0, failed = 0;
+  var registered = 0, clientsCreated = 0, blocked = 0, failed = 0;
   var schoolsByName = null;
 
   for (var i = 0; i < founders.length; i++) {
@@ -210,31 +272,69 @@ async function registerFounders(token, getSchools) {
       continue;
     }
 
+    var f = founder.fields || {};
+    var stamp = {};
+
     try {
-      // Fetched on first real need, so a tick with nothing verified costs one
-      // Airtable call rather than two. The monthly cap is the binding limit.
-      if (!schoolsByName) schoolsByName = await getSchools();
-      var slot = await recordSchoolSlot(token, founderAsSponsor(founder), schoolsByName, {
-        allowHeldSchools: true,
-        label: 'founding partner confirmation'
-      });
-      await airtable(token, LEAD_BASE + '/' + FOUNDERS_TABLE, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          records: [{ id: founder.id, fields: { 'Sales Funnel Record': slot.id || '' } }],
-          typecast: true
-        })
-      });
-      registered++;
-      console.log('Founding partner "' + name + '" now holds their category (business ' +
-        slot.id + ').');
+      // The slot comes first and is idempotent, so a failure after it can retry
+      // harmlessly. Creating the Client twice would duplicate a sponsor.
+      if (!f['Sales Funnel Record']) {
+        // Fetched on first real need, so a tick with nothing verified costs one
+        // Airtable call rather than two. The monthly cap is the binding limit.
+        if (!schoolsByName) schoolsByName = await getSchools();
+        var slot = await recordSchoolSlot(token, founderAsSponsor(founder), schoolsByName, {
+          allowHeldSchools: true,
+          label: 'founding partner confirmation'
+        });
+        stamp['Sales Funnel Record'] = slot.id || '';
+        registered++;
+        console.log('Founding partner "' + name + '" now holds their category (business ' +
+          slot.id + ').');
+      }
+
+      // The Client is what their free-year deliverables hang off and what puts
+      // them on the public listing. Founder recognition was promised from
+      // signing, so this is owed now, not when billing starts.
+      if (!f['Hub Client Record']) {
+        var created = await airtable(token, HUB_BASE + '/' + CLIENTS_TBL, {
+          method: 'POST',
+          body: JSON.stringify({
+            records: [{ fields: clientFieldsFromFounder(founder, await getPackages()) }],
+            typecast: true
+          })
+        });
+        var clientId = created.records && created.records[0] && created.records[0].id;
+        stamp['Hub Client Record'] = clientId || '';
+        clientsCreated++;
+        console.log('Founding partner "' + name + '" now has a Client (' + clientId + ').');
+      }
+
+      if (Object.keys(stamp).length) {
+        await airtable(token, LEAD_BASE + '/' + FOUNDERS_TABLE, {
+          method: 'PATCH',
+          body: JSON.stringify({ records: [{ id: founder.id, fields: stamp }], typecast: true })
+        });
+      }
     } catch (err) {
       failed++;
-      console.error('Could not register founding partner ' + founder.id + ': ' + err.message);
+      console.error('Could not set up founding partner ' + founder.id + ': ' + err.message);
+      // Whatever did succeed is still worth recording, so the next run picks up
+      // only the step that is actually missing instead of redoing both.
+      if (Object.keys(stamp).length) {
+        try {
+          await airtable(token, LEAD_BASE + '/' + FOUNDERS_TABLE, {
+            method: 'PATCH',
+            body: JSON.stringify({ records: [{ id: founder.id, fields: stamp }], typecast: true })
+          });
+        } catch (stampErr) {
+          console.error('Could not stamp partial progress for ' + founder.id + ': ' + stampErr.message);
+        }
+      }
     }
   }
 
-  return { registered: registered, blocked: blocked, failed: failed };
+  return { registered: registered, clientsCreated: clientsCreated,
+           blocked: blocked, failed: failed };
 }
 
 /** Map the Hub's package names to their record IDs, so "Gold" resolves to a link. */
@@ -490,9 +590,10 @@ async function reportHealth(token, result) {
       ', approval emails retried: ' + (result.approvalEmailsRetried || 0) +
       ', failed: ' + (result.failed || 0) +
       ', held back by verification: ' + (result.blockedByVerification || 0) + '.');
-    if (result.foundersRegistered || result.foundersBlocked) {
+    if (result.foundersRegistered || result.founderClientsCreated || result.foundersBlocked) {
       summary.push('Founding partners registered in the Sales Funnel: ' +
         (result.foundersRegistered || 0) +
+        ', free-year Clients created: ' + (result.founderClientsCreated || 0) +
         ', held back by verification: ' + (result.foundersBlocked || 0) + '.');
     }
     (result.details || []).forEach(function (d) {
@@ -535,12 +636,17 @@ async function syncOnce() {
     if (!cachedSchools) cachedSchools = await schoolIdsByName(token);
     return cachedSchools;
   };
+  var cachedPackages = null;
+  var getPackages = async function () {
+    if (!cachedPackages) cachedPackages = await packageIdsByName(token);
+    return cachedPackages;
+  };
 
   // Founders first, and unconditionally: they are the party a school hold is
   // reserving slots for, so every tick they sit unregistered is a tick their
   // category could be promised to somebody else the moment the hold lifts.
   // This runs even when no application is waiting, which is the common case.
-  var founderCounts = await registerFounders(token, getSchools);
+  var founderCounts = await registerFounders(token, getSchools, getPackages);
 
   var all = await findApproved(token);
   if (all.length === 0) {
@@ -549,6 +655,7 @@ async function syncOnce() {
       synced: 0, approvalEmailsRetried: 0, failed: founderCounts.failed,
       blockedByVerification: 0,
       foundersRegistered: founderCounts.registered,
+      founderClientsCreated: founderCounts.clientsCreated,
       foundersBlocked: founderCounts.blocked
     };
   }
@@ -572,11 +679,12 @@ async function syncOnce() {
       synced: 0, approvalEmailsRetried: 0, failed: founderCounts.failed,
       blockedByVerification: blocked.length,
       foundersRegistered: founderCounts.registered,
+      founderClientsCreated: founderCounts.clientsCreated,
       foundersBlocked: founderCounts.blocked
     };
   }
 
-  var packagesByName = await packageIdsByName(token);
+  var packagesByName = await getPackages();
   var schoolsByName = await getSchools();
   var synced = [];
   var retriedEmail = [];
@@ -662,6 +770,7 @@ async function syncOnce() {
     failed: failed.length + founderCounts.failed,
     blockedByVerification: blocked.length,
     foundersRegistered: founderCounts.registered,
+    founderClientsCreated: founderCounts.clientsCreated,
     foundersBlocked: founderCounts.blocked,
     details: synced.concat(retriedEmail)
   };
@@ -706,6 +815,7 @@ exports._internals = {
   recordSchoolSlot: recordSchoolSlot,
   registerFounders: registerFounders,
   founderAsSponsor: founderAsSponsor,
+  clientFieldsFromFounder: clientFieldsFromFounder,
   quote: quote,
   REQUIRED_CHECKS: REQUIRED_CHECKS
 };
