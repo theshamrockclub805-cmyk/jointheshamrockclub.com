@@ -53,10 +53,10 @@ function tierRank(name) {
  * Only ever show a sponsor who is still active, was published, and either has
  * paid or is a founding partner in their free year.
  *
- * Founders owe nothing until the 2027-28 school year, so Payment Status alone
+ * Founders owe nothing until April 2027, so Payment Status alone
  * would hide them - yet section 4 of the Membership Agreement promises
  * "Founding Partner recognition on our website and sponsor listings" from
- * signing, and the confirmation page lists it as Ongoing rather than 2027-28.
+ * signing, and the confirmation page lists it as Ongoing rather than later.
  * Show in Directory is still the gate that actually publishes anyone, so this
  * widens who may appear, never who does.
  */

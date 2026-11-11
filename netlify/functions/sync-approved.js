@@ -150,7 +150,7 @@ async function findApproved(token) {
  * category at their school is held by nobody, and the only thing standing
  * between a founder and losing their trade to a walk-in is the school hold.
  *
- * They are not billed yet - the free year runs to spring 2027 - so this does
+ * They are not billed yet - the free period runs to April 2027 - so this does
  * NOT create a Client, send a payment link, or email them. It does one job:
  * make the reservation real in the base that enforces exclusivity.
  */
@@ -194,7 +194,7 @@ function founderAsSponsor(founder) {
  *
  * Deliberately not billed: Payment Status is "Not yet billed", so the
  * paid-deliverable automations do not fire and nobody is asked for money they
- * do not owe until the 2027-28 school year. Membership Phase is what marks
+ * do not owe until April 2027. Membership Phase is what marks
  * them as publishable anyway, because Founding Partner recognition was
  * promised from signing rather than from payment.
  *
@@ -236,8 +236,9 @@ function clientFieldsFromFounder(founder, packagesByName) {
     notes.push('Locked price: $' + f['Locked Annual Price'] +
       '/year, held for the 2027-28 school year.');
   }
-  notes.push('Free through the end of the spring 2027 semester. Billing begins with the ' +
-    '2027-28 school year, and advance notice is owed before the first invoice.');
+  notes.push('Free through April 2027. Ask them by 31 March 2027 whether they are continuing into ' +
+    '2027-28; the first invoice follows in April and carries them to the end of that school year. ' +
+    'Nothing is invoiced before they have said yes.');
   notes.push('Founding partner record: ' + founder.id);
   fields['Notes'] = notes.join('\n');
 

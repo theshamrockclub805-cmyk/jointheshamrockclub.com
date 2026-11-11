@@ -50,7 +50,7 @@ exports.handler = async (event) => {
 
   // Nothing is owed yet, so there is nothing to charge.
   //
-  // Founding partners are free from signing until the 2027-28 school year -
+  // Founding partners are free from signing until April 2027 -
   // section 4 of the Membership Agreement they signed says so - and their
   // Client is created the moment they are approved, more than a year before
   // the first invoice. The record therefore exists, has a package, and has a
@@ -64,10 +64,9 @@ exports.handler = async (event) => {
   if (notYetBillable(c)) {
     return page(200, 'Nothing to pay yet',
       "You're confirmed as a Shamrock Founding Partner and there is nothing to pay. " +
-      'Your membership is free through the end of the spring 2027 semester, and billing ' +
-      'begins with the 2027-28 school year at your locked price \u2014 we will write to you ' +
-      'well before the first invoice. If you think this is wrong, just reply to your ' +
-      'confirmation email.');
+      'There is nothing to pay until April 2027. We will ask you in March whether you are ' +
+      'continuing into the 2027-28 school year, and your first invoice follows only after that, ' +
+      'at your locked price. If you think this is wrong, just reply to your confirmation email.');
   }
 
   try {

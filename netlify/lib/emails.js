@@ -148,10 +148,14 @@ function foundingPartnerConfirmed(data) {
   var terms = [
     { text: 'To be clear about what happens next, and when:' },
     { bullets: [
-      'Now through spring 2027: no cost. You stay in the Oxnard High School network.',
-      'The 2027-28 school year: billing begins, with advance notice, ' +
+      'From today through April 2027: no cost. Your category is held at Oxnard High School, your business ' +
+        'goes on our site, and the Shamrock app opens to you on January 5.',
+      'By March 31, 2027: we will ask whether you are continuing into 2027-28. That is a conversation, not a ' +
+        'payment. Nothing is charged either way, and no is a fair answer.',
+      'April 2027: if you are continuing, your first invoice follows ' +
         (price ? 'at your locked price of ' + price : 'at your locked price') +
-        ' - even if our pricing has gone up by then. Banners and plaques go up that fall.',
+        ' - even if our pricing has gone up by then. It carries you through to the end of the 2027-28 school ' +
+        'year. Banners and plaques go up that fall.',
       'Ongoing: Founding Partner recognition on our website and sponsor listings.'
     ] }
   ];
@@ -163,7 +167,7 @@ function foundingPartnerConfirmed(data) {
       { text: 'You asked about sponsoring more than one school, so we have not set a price yet. ' +
               'We will reach out to walk through the District Partner, Leader and Champion options ' +
               'with you. Your founding partner standing is recorded either way, and nothing is ' +
-              'charged before the 2027-28 school year.' }
+              'charged before April 2027.' }
     ];
   }
 
