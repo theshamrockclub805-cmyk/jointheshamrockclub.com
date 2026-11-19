@@ -3,5 +3,8 @@
   "private": true,
   "dependencies": {
     "stripe": "^22.6.2"
+  },
+  "scripts": {
+    "test": "node tests/run.js"
   }
 }
