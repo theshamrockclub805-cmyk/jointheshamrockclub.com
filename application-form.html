@@ -476,6 +476,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <option>YouTube</option>
               <option>TikTok</option>
               <option>Referral from another business</option>
+              <option>A friend or someone I know</option>
               <option>A teacher, coach or school staff member</option>
               <option>Local event</option>
               <option>Other</option>
@@ -727,14 +728,15 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
 
   var REFERRAL_PROMPTS = {
     'Oxnard USA': ['Who at Oxnard USA? (optional)', 'A name, or where you saw it: newsletter, podcast, website...', false],
-    'Instagram': ['Which account? (optional)', '@handle', false],
+    'Instagram': ['Which account, or who told you? (optional)', '@handle, or a name', false],
     'Facebook': ['Which page or person? (optional)', 'Page or person name', false],
-    'YouTube': ['Which channel or video? (optional)', 'Channel or video name', false],
-    'TikTok': ['Which account? (optional)', '@handle', false],
+    'YouTube': ['Which channel, or who told you? (optional)', 'Channel name, or a name', false],
+    'TikTok': ['Which account, or who told you? (optional)', '@handle, or a name', false],
     'Referral from another business': ['Who referred you?', 'Business or person name', true],
+    'A friend or someone I know': ['Their name', 'First and last name', true],
     'A teacher, coach or school staff member': ['Their name', 'First and last name', true],
-    'Local event': ['Which event? (optional)', 'Event name', false],
-    'Other': ['Where did you hear about us?', 'A name, @handle, website, or event', true]
+    'Local event': ['Which event, or who did you speak to? (optional)', 'Event name, or a name', false],
+    'Other': ['Where did you hear about us, or who told you?', 'A name, @handle, website, or event', true]
   };
   var heardEl = document.getElementById('heard');
   var referredField = document.getElementById('referred-field');
@@ -776,10 +778,16 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     var isStaff = heardEl.value === STAFF_REFERRAL;
     staffBlock.hidden = !isStaff;
     if (!isStaff) {
-      // Leaving a school behind after switching away would credit a program that
-      // nobody named, so clear it rather than carry it silently.
-      referrerSchool.value = '';
-      referrerSchool.closest('.field').classList.remove('invalid');
+      // Clear every hidden answer, not just the school. Someone who starts a
+      // staff referral, types a program, then switches to "a friend" would
+      // otherwise still post that program - naming a payee on a referral that
+      // credits nobody, which is exactly the record that gets paid by mistake
+      // months later.
+      ['referrer-school', 'referrer-email', 'referrer-program'].forEach(function(id){
+        var el = document.getElementById(id);
+        el.value = '';
+        el.closest('.field').classList.remove('invalid');
+      });
     }
   }
   heardEl.addEventListener('change', function(){ updateReferral(); updateStaffReferral(); });
