@@ -12,6 +12,12 @@
  * so a sponsor is welcomed exactly once, and only stamped after the send
  * actually succeeded.
  *
+ * Every working tick writes a heartbeat to Automation Health, including the
+ * ticks that find nobody to welcome. A sponsor who has paid and heard nothing
+ * is the quietest failure in this system - they are not waiting on us, as far
+ * as they know - so "the job ran and there was nothing to do" has to be
+ * visibly different from "the job stopped running".
+ *
  * Required environment variables:
  *   AIRTABLE_TOKEN, RESEND_API_KEY, MAIL_FROM
  * Optional:
@@ -21,6 +27,7 @@
 var cadence = require('../lib/cadence');
 var mailer = require('../lib/mailer');
 var emails = require('../lib/emails');
+var health = require('../lib/health');
 
 function env(name) {
   var value = process.env[name];
@@ -98,7 +105,7 @@ async function runOnce() {
   var token = env('AIRTABLE_TOKEN');
   if (!token) {
     console.error('AIRTABLE_TOKEN is not set; no welcome emails were sent.');
-    return { ok: false, error: 'Airtable is not configured' };
+    return { ok: false, welcomed: 0, skipped: 0, problems: [], error: 'Airtable is not configured' };
   }
 
   var data;
@@ -107,14 +114,18 @@ async function runOnce() {
       HUB_BASE + '/' + CLIENTS_TBL + '?pageSize=50&filterByFormula=' + encodeURIComponent(FILTER));
   } catch (err) {
     console.error('Could not look for newly paid sponsors: ' + err.message);
-    return { ok: false, error: err.message };
+    return { ok: false, welcomed: 0, skipped: 0, problems: [], error: err.message };
   }
 
   var clients = data.records || [];
-  if (clients.length === 0) return { ok: true, welcomed: 0 };
+  if (clients.length === 0) return { ok: true, welcomed: 0, skipped: 0, problems: [] };
 
   var welcomed = 0;
   var skipped = 0;
+  // Who could not be welcomed and why. A bare count tells whoever is reading
+  // the health row that something is wrong without telling them which sponsor
+  // is sitting there paid and unacknowledged.
+  var problems = [];
 
   for (var i = 0; i < clients.length; i++) {
     var client = clients[i];
@@ -122,6 +133,7 @@ async function runOnce() {
 
     if (!client.fields || !client.fields['Contact Email']) {
       console.warn('Paid sponsor "' + name + '" (' + client.id + ') has no contact email; not welcomed.');
+      problems.push({ client: name, id: client.id, why: 'no contact email on the Client record' });
       skipped++;
       continue;
     }
@@ -130,6 +142,8 @@ async function runOnce() {
     if (!sent.sent) {
       // Left unstamped on purpose, so the next run tries again.
       console.error('Welcome email to "' + name + '" failed (' + sent.reason + '); will retry.');
+      problems.push({ client: name, id: client.id,
+                      why: sent.reason + (sent.detail ? ': ' + sent.detail : '') + ' - will retry next run' });
       skipped++;
       continue;
     }
@@ -149,7 +163,21 @@ async function runOnce() {
     }
   }
 
-  return { ok: true, welcomed: welcomed, skipped: skipped };
+  return { ok: true, welcomed: welcomed, skipped: skipped, problems: problems };
+}
+
+/**
+ * This job's lines in the Automation Health row. The shared reporter in
+ * lib/health.js adds the timestamp and does the write.
+ */
+function healthLines(result) {
+  var lines = ['Welcomed: ' + (result.welcomed || 0) +
+               ', not welcomed: ' + (result.skipped || 0) + '.'];
+  (result.problems || []).forEach(function (p) {
+    lines.push('- ' + p.client + ' (' + p.id + '): ' + p.why);
+  });
+  if (result.error) lines.push('Error: ' + result.error);
+  return lines;
 }
 
 exports.handler = async function () {
@@ -163,6 +191,7 @@ exports.handler = async function () {
   try {
     var result = await runOnce();
     if (result.welcomed || result.skipped) console.log('Welcome emails:', JSON.stringify(result));
+    await health.report(env('AIRTABLE_TOKEN'), 'send-welcome', healthLines(result));
     return {
       statusCode: result.ok ? 200 : 502,
       headers: { 'Content-Type': 'application/json' },
@@ -170,6 +199,10 @@ exports.handler = async function () {
     };
   } catch (err) {
     console.error('Welcome email run failed: ' + err.message);
+    // A crash is the case most worth recording: it is the one where nothing
+    // else leaves a trace anyone can see.
+    await health.report(env('AIRTABLE_TOKEN'), 'send-welcome',
+                        ['Run failed before finishing: ' + err.message]);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -178,4 +211,9 @@ exports.handler = async function () {
   }
 };
 
-exports._internals = { welcomeFor: welcomeFor, readableDate: readableDate, env: env };
+exports._internals = {
+  welcomeFor: welcomeFor,
+  readableDate: readableDate,
+  healthLines: healthLines,
+  env: env
+};

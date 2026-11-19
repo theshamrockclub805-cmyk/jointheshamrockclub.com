@@ -33,6 +33,7 @@
 var cadence = require('../lib/cadence');
 var mailer = require('../lib/mailer');
 var emails = require('../lib/emails');
+var health = require('../lib/health');
 
 function env(name) {
   var value = process.env[name];
@@ -620,61 +621,39 @@ async function sendApprovalEmail(token, app, clientId) {
   return { sent: true };
 }
 
-var HEALTH_TABLE = env('AIRTABLE_HEALTH_TABLE_ID') || 'tblJSPfLUVnwEObui';
-
 /**
  * Rewrite this function's row in Automation Health on every run, including
  * runs that do nothing.
  *
- * Without it there is no way to tell "the schedule is not firing" apart from
- * "the schedule fired and had nothing to do" - both look like an empty field
- * in Airtable, and that ambiguity has cost days on this project already. The
- * result text carries the reason a send failed, so the next failure explains
- * itself instead of needing a log nobody can reach.
- *
- * Best-effort: health reporting must never break the thing it reports on.
+ * The mechanics live in lib/health.js so that every scheduled function
+ * reports the same way. What belongs here is only the part that is specific
+ * to this job: which counts matter, and the reason a given record could not
+ * be finished. The reason is the whole point - "failed: 1" on its own sends
+ * someone to logs they cannot reach, which is the situation this table exists
+ * to end.
  */
 async function reportHealth(token, result) {
-  try {
-    var summary = ['Ran at ' + new Date().toISOString() + ' UTC.'];
-    summary.push('Synced: ' + (result.synced || 0) +
-      ', approval emails retried: ' + (result.approvalEmailsRetried || 0) +
-      ', failed: ' + (result.failed || 0) +
-      ', held back by verification: ' + (result.blockedByVerification || 0) + '.');
-    if (result.foundersRegistered || result.founderClientsCreated || result.foundersBlocked) {
-      summary.push('Founding partners registered in the Sales Funnel: ' +
-        (result.foundersRegistered || 0) +
-        ', free-year Clients created: ' + (result.founderClientsCreated || 0) +
-        ', held back by verification: ' + (result.foundersBlocked || 0) + '.');
-    }
-    (result.founderProblems || []).forEach(function (p) {
-      summary.push('- founding partner ' + p.founder + ' (' + p.id + '): ' + p.why);
-    });
-    (result.details || []).forEach(function (d) {
-      summary.push('- ' + d.application + ': email ' +
-        (d.approvalEmailed ? 'sent' : 'NOT sent (' + (d.why || 'unknown reason') + ')'));
-    });
-    if (result.error) summary.push('Error: ' + result.error);
-
-    // One upsert rather than a lookup plus a write. This runs on every
-    // scheduled tick, so a spare call here is ~2,900 wasted Airtable requests
-    // a month - enough to matter against a plan's monthly cap.
-    await airtable(token, LEAD_BASE + '/' + HEALTH_TABLE, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        performUpsert: { fieldsToMergeOn: ['Function'] },
-        records: [{
-          fields: {
-            'Function': 'sync-approved',
-            'Last Run At': new Date().toISOString(),
-            'Last Result': summary.join('\n').slice(0, 5000)
-          }
-        }]
-      })
-    });
-  } catch (err) {
-    console.error('Could not write Automation Health: ' + err.message);
+  var summary = [];
+  summary.push('Synced: ' + (result.synced || 0) +
+    ', approval emails retried: ' + (result.approvalEmailsRetried || 0) +
+    ', failed: ' + (result.failed || 0) +
+    ', held back by verification: ' + (result.blockedByVerification || 0) + '.');
+  if (result.foundersRegistered || result.founderClientsCreated || result.foundersBlocked) {
+    summary.push('Founding partners registered in the Sales Funnel: ' +
+      (result.foundersRegistered || 0) +
+      ', free-year Clients created: ' + (result.founderClientsCreated || 0) +
+      ', held back by verification: ' + (result.foundersBlocked || 0) + '.');
   }
+  (result.founderProblems || []).forEach(function (p) {
+    summary.push('- founding partner ' + p.founder + ' (' + p.id + '): ' + p.why);
+  });
+  (result.details || []).forEach(function (d) {
+    summary.push('- ' + d.application + ': email ' +
+      (d.approvalEmailed ? 'sent' : 'NOT sent (' + (d.why || 'unknown reason') + ')'));
+  });
+  if (result.error) summary.push('Error: ' + result.error);
+
+  await health.report(token, 'sync-approved', summary);
 }
 
 async function syncOnce() {
@@ -854,6 +833,10 @@ exports.handler = async function () {
     };
   } catch (err) {
     console.error('Approved-application sync failed:', err.message);
+    // A crash is the case most worth recording: it is the one where nothing
+    // else leaves a trace anyone can see.
+    await health.report(env('AIRTABLE_TOKEN'), 'sync-approved',
+                        ['Run failed before finishing: ' + err.message]);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

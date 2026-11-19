@@ -24,6 +24,7 @@ Each one guards something that has actually gone wrong on this project:
 | `application-form.test.js` | The referral block on the live form, which is all show/hide behaviour — reading the markup proves nothing. Needs a browser. |
 | `approved-sync.test.js` | The scheduled sync across all three bases: the retry hole that left a sponsor holding a slot nobody charged, the verification gate, the Oxnard hold, founder registration, and that an idle tick stays cheap. |
 | `payment-guard.test.js` | That `/pay` refuses anyone who does not owe money yet, and that Stripe is never even contacted for them. |
+| `welcome-heartbeat.test.js` | That the welcome job reports in on every working tick, names the sponsor and reason when one is missed, and cannot be brought down by the health table it writes to. |
 
 ## Writing one
 
@@ -84,5 +85,6 @@ the area is next touched:
 
 - the Netlify Forms fallback when the function is down
 - form security: honeypot, method check, SSN rejection
-- the Automation Health heartbeat surviving a broken table
-- `send-welcome`, which has no health heartbeat of its own either
+- `sync-approved`'s own heartbeat is covered only through the sync tests; the
+  shared reporter in `netlify/lib/health.js` is exercised directly by
+  `welcome-heartbeat`
