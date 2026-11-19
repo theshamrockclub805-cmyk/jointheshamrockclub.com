@@ -38,15 +38,30 @@ async function main() {
   for (const file of files) {
     const run = require(path.join(__dirname, file));
     const t = suite(file.replace('.test.js', ''));
+
+    // The functions under test log a lot on purpose - it is how they explain
+    // themselves in production. Capture it rather than let it bury the result,
+    // and print it only where it helps: on a failure, or with VERBOSE=1.
+    const captured = [];
+    const realConsole = { log: console.log, warn: console.warn, error: console.error };
+    const capture = stream => (...args) =>
+      captured.push(stream + ': ' + args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' '));
+    if (!process.env.VERBOSE) {
+      console.log = capture('log'); console.warn = capture('warn'); console.error = capture('error');
+    }
+
     try {
       await run(t);
     } catch (err) {
       if (err && err.isSkip) {
+        Object.assign(console, realConsole);
         skipped.push(file + ' — ' + err.message);
         console.log(`${YELLOW}skip${OFF}  ${t.title} ${DIM}(${err.message})${OFF}`);
         continue;
       }
       t('suite ran without throwing', false, err && err.stack ? err.stack : String(err));
+    } finally {
+      Object.assign(console, realConsole);
     }
 
     const bad = t.checks.filter(c => !c.ok);
@@ -61,6 +76,10 @@ async function main() {
         const d = typeof c.detail === 'string' ? c.detail : JSON.stringify(c.detail);
         console.log(`        ${DIM}${String(d).split('\n').join('\n        ')}${OFF}`);
       }
+    }
+    if (bad.length && captured.length) {
+      console.log(`      ${DIM}what the code logged while this ran:${OFF}`);
+      for (const line of captured) console.log(`        ${DIM}${line}${OFF}`);
     }
   }
 

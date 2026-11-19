@@ -58,6 +58,67 @@ class Skip extends Error {
   constructor(why) { super(why); this.isSkip = true; }
 }
 
+/** Drop every cached repo module, so a stub set up now is actually picked up. */
+function clearRepoModules() {
+  for (const key of Object.keys(require.cache)) {
+    if (key.startsWith(ROOT) && !key.includes(path.join('tests', 'lib'))) delete require.cache[key];
+  }
+}
+
+/**
+ * Replace the `stripe` package for the duration of a test.
+ *
+ * Unconditional, not a fallback: a test must never be able to reach Stripe,
+ * and the most valuable assertion about the payment guard is that checkout was
+ * never even attempted. Counting attempts here is what makes that provable.
+ *
+ * It also means these tests run with no node_modules at all, which is the
+ * state this repo is usually in.
+ */
+function stubStripe() {
+  const Module = require('module');
+  const realLoad = Module._load;
+  const checkouts = [];
+  Module._load = function (request) {
+    if (request === 'stripe') {
+      return function Stripe() {
+        return {
+          checkout: {
+            sessions: {
+              create: async function (options) {
+                checkouts.push(options);
+                return { url: 'https://checkout.stripe.com/c/pay/test-session' };
+              }
+            }
+          }
+        };
+      };
+    }
+    return realLoad.apply(this, arguments);
+  };
+  clearRepoModules();
+  return {
+    checkouts,
+    restore() { Module._load = realLoad; clearRepoModules(); }
+  };
+}
+
+/**
+ * Freeze the 90-minute cadence gate open.
+ *
+ * The scheduled functions only do work on every third 30-minute tick, so a
+ * handler called at the wrong moment returns "skipped" and a test asserting on
+ * real behaviour fails depending on the clock.
+ */
+function alwaysWorkingTick() {
+  const cadencePath = require.resolve(repoPath('netlify/lib/cadence.js'));
+  require.cache[cadencePath] = {
+    id: cadencePath, filename: cadencePath, loaded: true,
+    exports: { isWorkingTick: () => true, SLOTS_PER_CYCLE: 3 }
+  };
+  return { restore() { delete require.cache[cadencePath]; } };
+}
+
 /**
  * One suite's results. `t(name, condition, detail)` records a check; detail is
  * printed only on failure, which keeps a passing run readable and a failing one
@@ -75,4 +136,7 @@ function suite(title) {
   return t;
 }
 
-module.exports = { ROOT, repoPath, readRepo, freshRequire, playwright, Skip, suite };
+module.exports = {
+  ROOT, repoPath, readRepo, freshRequire, playwright, Skip, suite,
+  clearRepoModules, stubStripe, alwaysWorkingTick
+};

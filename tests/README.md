@@ -3,6 +3,7 @@
 ```
 npm test                 # everything
 npm test referral        # only files whose name contains "referral"
+VERBOSE=1 npm test       # include what the code logged while running
 ```
 
 Exit code is 0 only if nothing failed. No framework and no install step: the
@@ -21,6 +22,8 @@ Each one guards something that has actually gone wrong on this project:
 | `referral-payout.test.js` | The 15% owed to a referrer's school program: who is owed, how much, and that nothing is payable before the sponsor has paid us. |
 | `terms-consistency.test.js` | That the agreement, the confirmation page, the founder email and the version stamped on signings all state the same terms. This has drifted twice. |
 | `application-form.test.js` | The referral block on the live form, which is all show/hide behaviour — reading the markup proves nothing. Needs a browser. |
+| `approved-sync.test.js` | The scheduled sync across all three bases: the retry hole that left a sponsor holding a slot nobody charged, the verification gate, the Oxnard hold, founder registration, and that an idle tick stays cheap. |
+| `payment-guard.test.js` | That `/pay` refuses anyone who does not owe money yet, and that Stripe is never even contacted for them. |
 
 ## Writing one
 
@@ -52,14 +55,34 @@ needs no browser to deploy. A suite that wants one and cannot find it reports
 `node_modules`, then at `/opt/node-tools/node_modules/playwright` (present in
 the cloud dev container).
 
+## Stubs
+
+`stubStripe()` replaces the `stripe` package outright for the duration of a
+test, and counts checkout attempts. It is unconditional, not a fallback: a test
+must never be able to reach Stripe, and the most valuable assertion about the
+payment guard is that checkout was never *attempted*. It also means these run
+with no `node_modules`, which is the state this repo is usually in.
+
+`alwaysWorkingTick()` freezes the 90-minute cadence gate open. The scheduled
+functions only do work on every third 30-minute tick, so without it a handler
+test passes or fails depending on the wall clock.
+
+Both return a handle with `.restore()`. Call it in a `finally`.
+
+## Verifying a test can fail
+
+A suite that only ever passes is decoration. Each of these has been checked by
+breaking the thing it guards and confirming it fails on the right line — drop
+`AGREEMENT_VERSION` by one, remove the `Pushed to Deliverables Hub` branch from
+the sync, or short-circuit `notYetBillable` in `pay.js`. Worth repeating for
+anything new.
+
 ## What is not covered
 
-These were lost with the scratchpad and have not been rebuilt. Worth adding back
-when something in the area is next touched:
+Lost with the scratchpad and not yet rebuilt. Worth adding when something in
+the area is next touched:
 
-- the approved-application sync end to end (retry path, school slots, the Oxnard
-  hold, founder registration)
-- `/pay` refusing checkout for a sponsor who owes nothing
 - the Netlify Forms fallback when the function is down
 - form security: honeypot, method check, SSN rejection
 - the Automation Health heartbeat surviving a broken table
+- `send-welcome`, which has no health heartbeat of its own either
