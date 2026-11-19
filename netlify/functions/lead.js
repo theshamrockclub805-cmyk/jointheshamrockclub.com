@@ -246,6 +246,12 @@ function buildApplicationRecord(data, now) {
     'Preferred School or Program': schoolPreference(data.school, data.program),
     'How Did You Hear': clean(data.heard, 200),
     'Referred By': clean(data.referredBy, 200),
+    // A staff referral pays 15% of the first year to that person's school
+    // program, so it is stored as structured fields rather than buried in the
+    // free-text write-in. The school is what identifies whose program is owed.
+    'Referrer School': clean(data.referrerSchool, 200),
+    'Referrer Email': isEmail(clean(data.referrerEmail, 200)) ? clean(data.referrerEmail, 200) : '',
+    'Program to Credit': clean(data.referrerProgram, 200),
     'Business License or EIN': cleanLicense(data.license),
     'UTM Source': clean(data.utmSource, 200),
     'UTM Medium': clean(data.utmMedium, 200),

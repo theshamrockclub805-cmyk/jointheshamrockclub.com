@@ -476,7 +476,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <option>YouTube</option>
               <option>TikTok</option>
               <option>Referral from another business</option>
-              <option>A school or coach</option>
+              <option>A teacher, coach or school staff member</option>
               <option>Local event</option>
               <option>Other</option>
             </select>
@@ -487,6 +487,44 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
             <input type="text" id="referred-by" name="referredBy" maxlength="200">
             <p class="hint" id="referred-hint">So we can thank the right person.</p>
             <p class="error-msg">Please tell us who, so we can give them credit.</p>
+          </div>
+
+          <!-- A staff referral is the only kind that pays out: 15% of the first year
+               goes to that person's school program. "A coach at Ventura" is not
+               something anyone can pay, so this asks for enough to actually send
+               the money. Every school is selectable here, Oxnard included - the
+               hold above governs which school a BUSINESS may sponsor, not where a
+               teacher works. A teacher at Oxnard can refer a business to Ventura. -->
+          <div id="staff-referral" hidden>
+            <div class="field">
+              <label for="referrer-school">Which school do they work at? <span class="req">*</span></label>
+              <select id="referrer-school" name="referrerSchool">
+                <option value="">Select one</option>
+                <option>Camarillo High School</option>
+                <option>Channel Islands High School</option>
+                <option>Del Sol High School</option>
+                <option>Hueneme High School</option>
+                <option>Oxnard High School</option>
+                <option>Pacifica High School</option>
+                <option>Rancho Campana High School</option>
+                <option>Rio Mesa High School</option>
+                <option>Santa Clara High School</option>
+                <option>St. Bonaventure High School</option>
+                <option>Ventura High School</option>
+              </select>
+              <p class="hint">Their school program earns 15% of your first year when you come on board.</p>
+              <p class="error-msg">Tell us the school, so the right program gets credited.</p>
+            </div>
+            <div class="field">
+              <label for="referrer-email">Their email</label>
+              <input type="email" id="referrer-email" name="referrerEmail" maxlength="200">
+              <p class="hint">Optional. It lets us confirm the referral with them before we pay their program.</p>
+            </div>
+            <div class="field">
+              <label for="referrer-program">Which program should we credit?</label>
+              <input type="text" id="referrer-program" name="referrerProgram" maxlength="200" placeholder="Marching band, varsity football, robotics...">
+              <p class="hint">Optional &mdash; if you don't know, we'll ask them.</p>
+            </div>
           </div>
         </fieldset>
 
@@ -655,6 +693,9 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       program: data.program || '',
       heard: data.heard || '',
       referredBy: data.referredBy || '',
+      referrerSchool: data.referrerSchool || '',
+      referrerEmail: data.referrerEmail || '',
+      referrerProgram: data.referrerProgram || '',
       license: data.license || '',
       utmSource: data.utm_source || '',
       utmMedium: data.utm_medium || '',
@@ -679,6 +720,10 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
 
   // "How did you hear" write-in: shown for every answer, worded to match it,
   // and required where credit is owed to a named person or source.
+  // The only referral source that earns money. Named once: the option label, the
+  // reveal, the validation and the payload all key off this exact string.
+  var STAFF_REFERRAL = 'A teacher, coach or school staff member';
+
   var REFERRAL_PROMPTS = {
     'Oxnard USA': ['Who at Oxnard USA? (optional)', 'A name, or where you saw it: newsletter, podcast, website...', false],
     'Instagram': ['Which account? (optional)', '@handle', false],
@@ -686,7 +731,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     'YouTube': ['Which channel or video? (optional)', 'Channel or video name', false],
     'TikTok': ['Which account? (optional)', '@handle', false],
     'Referral from another business': ['Who referred you?', 'Business or person name', true],
-    'A school or coach': ['Which school or coach?', 'School, team, or coach name', true],
+    'A teacher, coach or school staff member': ['Their name', 'First and last name', true],
     'Local event': ['Which event? (optional)', 'Event name', false],
     'Other': ['Where did you hear about us?', 'A name, @handle, website, or event', true]
   };
@@ -694,6 +739,8 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
   var referredField = document.getElementById('referred-field');
   var referredInput = document.getElementById('referred-by');
   var referredLabel = document.getElementById('referred-label');
+  var staffBlock = document.getElementById('staff-referral');
+  var referrerSchool = document.getElementById('referrer-school');
   function referralPrompt(){ return REFERRAL_PROMPTS[heardEl.value] || null; }
   function updateReferral(){
     var p = referralPrompt();
@@ -705,8 +752,21 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     referredInput.placeholder = p[1];
     referredField.classList.remove('invalid');
   }
-  heardEl.addEventListener('change', updateReferral);
+
+  /** The extra fields only make sense, and are only required, for a staff referral. */
+  function updateStaffReferral(){
+    var isStaff = heardEl.value === STAFF_REFERRAL;
+    staffBlock.hidden = !isStaff;
+    if (!isStaff) {
+      // Leaving a school behind after switching away would credit a program that
+      // nobody named, so clear it rather than carry it silently.
+      referrerSchool.value = '';
+      referrerSchool.closest('.field').classList.remove('invalid');
+    }
+  }
+  heardEl.addEventListener('change', function(){ updateReferral(); updateStaffReferral(); });
   updateReferral();
+  updateStaffReferral();
 
   var SSN_PATTERN = /^\s*\d{3}[- ]\d{2}[- ]\d{4}\s*$/;
 
@@ -731,6 +791,15 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       valid = false;
     } else {
       referredField.classList.remove('invalid');
+    }
+
+    // A staff referral promises 15% to a school program. Without the school we
+    // cannot tell which program, so this one field is required when it applies.
+    if (heardEl.value === STAFF_REFERRAL) {
+      var schoolField = referrerSchool.closest('.field');
+      var schoolOk = referrerSchool.value.trim().length > 0;
+      schoolField.classList.toggle('invalid', !schoolOk);
+      if (!schoolOk) valid = false;
     }
 
     var licenseEl = document.getElementById('license');

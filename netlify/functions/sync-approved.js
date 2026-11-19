@@ -55,6 +55,12 @@ var HUB_BASE    = env('AIRTABLE_HUB_BASE_ID') || 'appGG8camPZ04Tsz6';
 var CLIENTS_TBL = env('AIRTABLE_HUB_CLIENTS_TABLE_ID') || 'tblQTVkBcVnolpo0P';
 var PACKAGES_TBL= env('AIRTABLE_HUB_PACKAGES_TABLE_ID') || 'tblEiajhPxOQmlQ69';
 
+// A business referred by school staff earns that person's school program 15% of
+// the sponsor's FIRST YEAR. Kept server-side like every other price in this
+// project: the browser never says what anyone is owed.
+var REFERRAL_RATE = 0.15;
+var STAFF_REFERRAL_SOURCE = 'A teacher, coach or school staff member';
+
 var API = 'https://api.airtable.com/v0/';
 
 function authHeaders(token) {
@@ -473,6 +479,42 @@ async function recordSchoolSlot(token, app, schoolsByName, options) {
   };
 }
 
+/**
+ * What a school staff referral is worth, and who it belongs to.
+ *
+ * Returns {} unless this application actually claims one, so a sponsor who
+ * found us on Instagram carries no referral fields at all rather than a row of
+ * zeroes that look like an unpaid debt.
+ *
+ * The amount accrues now and is payable later. Approval is not cash: a sponsor
+ * can be approved for weeks without paying, and paying a school program out of
+ * money that never arrived is not a mistake you can quietly reverse. The
+ * Referral Payout Ready column on the Client is what says when it is payable.
+ */
+function referralFieldsFrom(f) {
+  if (selectName(f['How Did You Hear']) !== STAFF_REFERRAL_SOURCE) return {};
+
+  var school = selectName(f['Referrer School']) || '';
+  var name = f['Referred By'] || '';
+  // Without a school there is no program and nobody to pay, so this is not yet
+  // a referral - just an unattributed claim. It stays on the application until
+  // somebody fills in who it was.
+  if (!school) return {};
+
+  var amount = Number(f['Annual Sponsorship Amount']) || 0;
+  if (amount <= 0) return {};
+
+  var credit = (name || 'Unnamed staff member') + ' (' + school + ')';
+  var program = f['Program to Credit'];
+  if (program) credit += ' \u2014 ' + program;
+
+  return {
+    'Referral Credit': credit.slice(0, 250),
+    'Referral Payout Due': Math.round(amount * REFERRAL_RATE * 100) / 100,
+    'Referral Payout Status': 'Accrued \u2014 awaiting sponsor payment'
+  };
+}
+
 function clientFieldsFrom(app, packagesByName) {
   var f = app.fields || {};
   var fields = {
@@ -506,6 +548,8 @@ function clientFieldsFrom(app, packagesByName) {
     (f['UTM Campaign'] ? ' / ' + f['UTM Campaign'] : '') + ')';
   if (source) fields['Referral Source'] = source.slice(0, 250);
   if (f['Oxnard USA Referral'] === 'Yes') fields['Oxnard USA Referral'] = true;
+
+  Object.assign(fields, referralFieldsFrom(f));
 
   // Carry the context the team needs for the first call, in one readable block.
   var notes = [];
@@ -824,6 +868,8 @@ exports._internals = {
   clientFieldsFrom: clientFieldsFrom,
   env: env,
   isVerified: isVerified,
+  referralFieldsFrom: referralFieldsFrom,
+  REFERRAL_RATE: REFERRAL_RATE,
   fieldsAreVerified: fieldsAreVerified,
   recordSchoolSlot: recordSchoolSlot,
   registerFounders: registerFounders,
