@@ -521,9 +521,10 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <p class="hint">Optional. It lets us confirm the referral with them before we pay their program.</p>
             </div>
             <div class="field">
-              <label for="referrer-program">Which program should we credit?</label>
-              <input type="text" id="referrer-program" name="referrerProgram" maxlength="200" placeholder="Marching band, varsity football, robotics...">
-              <p class="hint">Optional &mdash; if you don't know, we'll ask them.</p>
+              <label for="referrer-program" id="referrer-program-label">Which of their programs should we credit?</label>
+              <input type="text" id="referrer-program" name="referrerProgram" maxlength="200" placeholder="The program they run or coach">
+              <p class="hint">Optional &mdash; if you don't know, we'll ask them. This is the program that receives
+              the 15%, so it is theirs, not the one you chose above. The two are often different.</p>
             </div>
           </div>
         </fieldset>
@@ -741,6 +742,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
   var referredLabel = document.getElementById('referred-label');
   var staffBlock = document.getElementById('staff-referral');
   var referrerSchool = document.getElementById('referrer-school');
+  var referrerProgramLabel = document.getElementById('referrer-program-label');
   function referralPrompt(){ return REFERRAL_PROMPTS[heardEl.value] || null; }
   function updateReferral(){
     var p = referralPrompt();
@@ -751,6 +753,22 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     if (p[2]) { var req = document.createElement('span'); req.className = 'req'; req.textContent = '*'; referredLabel.appendChild(req); }
     referredInput.placeholder = p[1];
     referredField.classList.remove('invalid');
+  }
+
+  /**
+   * Name whose program it is, once we know the name.
+   *
+   * This field sits a few rows below "Program you'd like to support", and the
+   * two mean different things: one is what the sponsor is backing, the other is
+   * what receives the 15%. They can be different programs at different schools,
+   * so the label says "Dana Ruiz's programs" rather than leaving "their" to do
+   * work it cannot do next to an almost identical question.
+   */
+  function updateReferrerProgramLabel(){
+    var who = referredInput.value.trim();
+    referrerProgramLabel.textContent = who
+      ? 'Which of ' + who + '\u2019s programs should we credit?'
+      : 'Which of their programs should we credit?';
   }
 
   /** The extra fields only make sense, and are only required, for a staff referral. */
@@ -765,8 +783,10 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     }
   }
   heardEl.addEventListener('change', function(){ updateReferral(); updateStaffReferral(); });
+  referredInput.addEventListener('input', updateReferrerProgramLabel);
   updateReferral();
   updateStaffReferral();
+  updateReferrerProgramLabel();
 
   var SSN_PATTERN = /^\s*\d{3}[- ]\d{2}[- ]\d{4}\s*$/;
 
