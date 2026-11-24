@@ -490,12 +490,23 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
             <p class="error-msg">Please tell us who, so we can give them credit.</p>
           </div>
 
-          <!-- A staff referral is the only kind that pays out: 15% of the first year
-               goes to that person's school program. "A coach at Ventura" is not
-               something anyone can pay, so this asks for enough to actually send
-               the money. Every school is selectable here, Oxnard included - the
-               hold above governs which school a BUSINESS may sponsor, not where a
-               teacher works. A teacher at Oxnard can refer a business to Ventura. -->
+          <!-- Two of the answers above pay a referral on the first year: a district
+               employee earns 15% for their school program, anyone else earns 10%
+               for themselves. "A coach at Ventura" is not something anyone can
+               pay, so these fields ask for enough to actually send the money.
+               The email is shared by both paths - one input, so a switch between
+               them cannot post two conflicting answers. -->
+          <div class="field" id="referrer-email-field" hidden>
+            <label for="referrer-email" id="referrer-email-label">Their email</label>
+            <input type="email" id="referrer-email" name="referrerEmail" maxlength="200">
+            <p class="hint" id="referrer-email-hint">Optional. It lets us confirm the referral with them before we pay their program.</p>
+            <p class="error-msg">We need their email to confirm the referral and arrange their payment.</p>
+          </div>
+
+          <!-- Every school is selectable here, Oxnard included - the hold above
+               governs which school a BUSINESS may sponsor, not where a teacher
+               works. A teacher at Oxnard can refer a business to Ventura, and
+               their own program is still the one that gets paid. -->
           <div id="staff-referral" hidden>
             <div class="field">
               <label for="referrer-school">Which school do they work at? <span class="req">*</span></label>
@@ -517,16 +528,17 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <p class="error-msg">Tell us the school, so the right program gets credited.</p>
             </div>
             <div class="field">
-              <label for="referrer-email">Their email</label>
-              <input type="email" id="referrer-email" name="referrerEmail" maxlength="200">
-              <p class="hint">Optional. It lets us confirm the referral with them before we pay their program.</p>
-            </div>
-            <div class="field">
               <label for="referrer-program" id="referrer-program-label">Which of their programs should we credit?</label>
               <input type="text" id="referrer-program" name="referrerProgram" maxlength="200" placeholder="The program they run or coach">
               <p class="hint">Optional &mdash; if you don't know, we'll ask them. This is the program that receives
               the 15%, so it is theirs, not the one you chose above. The two are often different.</p>
             </div>
+          </div>
+
+          <div id="individual-referral" hidden>
+            <p class="hint">Whoever sent you earns 10% of your first year once you are on board and paid up.
+            We will confirm it with them first, and we need a few tax details from them before anything
+            can be sent &mdash; so their email above is how we reach them.</p>
           </div>
         </fieldset>
 
@@ -722,9 +734,13 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
 
   // "How did you hear" write-in: shown for every answer, worded to match it,
   // and required where credit is owed to a named person or source.
-  // The only referral source that earns money. Named once: the option label, the
-  // reveal, the validation and the payload all key off this exact string.
+  // The two sources that earn money, and what each pays. Named once: the option
+  // labels, the reveal, the validation and the payload all key off these exact
+  // strings. They must match TYPE_BY_SOURCE in netlify/lib/referrals.js, which
+  // is what actually accrues the money - a test holds the two together.
   var STAFF_REFERRAL = 'A teacher, coach or school staff member';
+  var INDIVIDUAL_REFERRAL = 'A friend or someone I know';
+  var INDIVIDUAL_RATE = '10%';
 
   var REFERRAL_PROMPTS = {
     'Oxnard USA': ['Who at Oxnard USA? (optional)', 'A name, or where you saw it: newsletter, podcast, website...', false],
@@ -745,6 +761,11 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
   var staffBlock = document.getElementById('staff-referral');
   var referrerSchool = document.getElementById('referrer-school');
   var referrerProgramLabel = document.getElementById('referrer-program-label');
+  var individualBlock = document.getElementById('individual-referral');
+  var emailField = document.getElementById('referrer-email-field');
+  var emailInput = document.getElementById('referrer-email');
+  var emailLabel = document.getElementById('referrer-email-label');
+  var emailHint = document.getElementById('referrer-email-hint');
   function referralPrompt(){ return REFERRAL_PROMPTS[heardEl.value] || null; }
   function updateReferral(){
     var p = referralPrompt();
@@ -773,27 +794,63 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       : 'Which of their programs should we credit?';
   }
 
-  /** The extra fields only make sense, and are only required, for a staff referral. */
-  function updateStaffReferral(){
+  /**
+   * Show only the fields the chosen referral type can actually be paid from.
+   *
+   * A district employee needs a school, because that is what names the program
+   * the 15% goes to. An individual needs an email, because they are the payee
+   * themselves and nobody can be paid - or asked for the tax details that have
+   * to come first - through a name alone.
+   */
+  var lastReferralType = null;
+  function updateReferralExtras(){
     var isStaff = heardEl.value === STAFF_REFERRAL;
+    var isIndividual = heardEl.value === INDIVIDUAL_REFERRAL;
+    var pays = isStaff || isIndividual;
+
     staffBlock.hidden = !isStaff;
-    if (!isStaff) {
-      // Clear every hidden answer, not just the school. Someone who starts a
-      // staff referral, types a program, then switches to "a friend" would
-      // otherwise still post that program - naming a payee on a referral that
-      // credits nobody, which is exactly the record that gets paid by mistake
-      // months later.
-      ['referrer-school', 'referrer-email', 'referrer-program'].forEach(function(id){
-        var el = document.getElementById(id);
-        el.value = '';
-        el.closest('.field').classList.remove('invalid');
-      });
+    individualBlock.hidden = !isIndividual;
+    emailField.hidden = !pays;
+
+    emailLabel.innerHTML = '';
+    emailLabel.appendChild(document.createTextNode('Their email '));
+    if (isIndividual) {
+      var req = document.createElement('span');
+      req.className = 'req';
+      req.textContent = '*';
+      emailLabel.appendChild(req);
     }
+    emailHint.textContent = isIndividual
+      ? 'We need this one. It is how we confirm the referral with them and arrange their ' +
+        INDIVIDUAL_RATE + '.'
+      : 'Optional. It lets us confirm the referral with them before we pay their program.';
+
+    // Clear every answer that the new choice has changed the meaning of.
+    //
+    // The school and program are staff-only, so they go whenever this is not a
+    // staff referral: someone who types a program and then switches to "a
+    // friend" would otherwise still post it, naming a payee on a referral that
+    // credits somebody else entirely.
+    //
+    // The email is shared by both paths, but it does NOT survive a switch
+    // between them, because the payee it describes is a different person and a
+    // different kind of payment. Carrying a teacher's address into an
+    // individual referral would set up a 15%-to-the-program referrer to be
+    // paid 10% personally instead - the one thing this scheme must never do.
+    var type = isStaff ? 'staff' : (isIndividual ? 'individual' : null);
+    var stale = isStaff ? [] : ['referrer-school', 'referrer-program'];
+    if (type !== lastReferralType) stale.push('referrer-email');
+    lastReferralType = type;
+    stale.forEach(function(id){
+      var el = document.getElementById(id);
+      el.value = '';
+      el.closest('.field').classList.remove('invalid');
+    });
   }
-  heardEl.addEventListener('change', function(){ updateReferral(); updateStaffReferral(); });
+  heardEl.addEventListener('change', function(){ updateReferral(); updateReferralExtras(); });
   referredInput.addEventListener('input', updateReferrerProgramLabel);
   updateReferral();
-  updateStaffReferral();
+  updateReferralExtras();
   updateReferrerProgramLabel();
 
   var SSN_PATTERN = /^\s*\d{3}[- ]\d{2}[- ]\d{4}\s*$/;
@@ -821,13 +878,19 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       referredField.classList.remove('invalid');
     }
 
-    // A staff referral promises 15% to a school program. Without the school we
-    // cannot tell which program, so this one field is required when it applies.
+    // Each paying referral has one field that decides whether anybody can
+    // actually be paid, so that field is required when it applies. Without it
+    // the application still goes through - it just earns nobody anything, and
+    // the person who sent them here would never know why.
     if (heardEl.value === STAFF_REFERRAL) {
       var schoolField = referrerSchool.closest('.field');
       var schoolOk = referrerSchool.value.trim().length > 0;
       schoolField.classList.toggle('invalid', !schoolOk);
       if (!schoolOk) valid = false;
+    } else if (heardEl.value === INDIVIDUAL_REFERRAL) {
+      var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
+      emailField.classList.toggle('invalid', !emailOk);
+      if (!emailOk) valid = false;
     }
 
     var licenseEl = document.getElementById('license');

@@ -84,4 +84,27 @@ module.exports = async function (t) {
     t(page + ' never calls a membership fee a tax-deductible donation',
       !/tax-deductible donation receipt/i.test(text));
   }
+
+  // --- the referral rates a referrer is PROMISED on the form, against the
+  // ones that actually accrue. The form is a static page and cannot read the
+  // lib, so nothing but this holds the two together: a rate changed in one
+  // place and not the other is a promise the payout quietly breaks.
+  const referrals = freshRequire('netlify/lib/referrals.js');
+  const form = readRepo('application-form.html');
+  const district = referrals.asPercent(referrals.RATES[referrals.DISTRICT]);
+  const individual = referrals.asPercent(referrals.RATES[referrals.INDIVIDUAL]);
+  t('the form promises a district employee ' + district,
+    form.includes('school program earns ' + district), district);
+  t('the form promises an individual ' + individual,
+    form.includes('earns ' + individual + ' of your first year'), individual);
+  t('the form quotes no rate the code does not pay',
+    (form.match(/\b\d{1,2}% of your first year\b/g) || [])
+      .every(phrase => phrase.startsWith(district) || phrase.startsWith(individual)),
+    form.match(/\b\d{1,2}% of your first year\b/g));
+
+  // --- the two labels that decide a rate must exist on the form exactly as
+  // the code spells them, or the dropdown pays nobody
+  for (const label of Object.keys(referrals.TYPE_BY_SOURCE)) {
+    t('the form offers "' + label + '" verbatim', form.includes('<option>' + label + '</option>'));
+  }
 };

@@ -31,6 +31,7 @@ function env(name) {
 
 var mailer = require('../lib/mailer');
 var emails = require('../lib/emails');
+var referrals = require('../lib/referrals');
 
 var BASE_ID = env('AIRTABLE_BASE_ID') || 'appiaYFwD340oK6uQ';
 var INQUIRY_TABLE = env('AIRTABLE_INQUIRY_TABLE_ID') || 'tblOuamBk2lzzGTCb';
@@ -246,9 +247,17 @@ function buildApplicationRecord(data, now) {
     'Preferred School or Program': schoolPreference(data.school, data.program),
     'How Did You Hear': clean(data.heard, 200),
     'Referred By': clean(data.referredBy, 200),
-    // A staff referral pays 15% of the first year to that person's school
-    // program, so it is stored as structured fields rather than buried in the
-    // free-text write-in. The school is what identifies whose program is owed.
+    // A referral that earns money is stored as structured fields rather than
+    // buried in the free-text write-in, because somebody has to be paid from
+    // it. For a district employee the school identifies whose program is owed;
+    // for an individual the email is the only way to reach the payee at all.
+    //
+    // Referrer Type is decided HERE, from the source, and never re-derived
+    // downstream. The rate is read off the type, so a marketing edit to the
+    // dropdown label cannot quietly stop paying people. It is deliberately not
+    // taken from the posted body: a form can be posted by hand, and this is
+    // the field that decides who gets money.
+    'Referrer Type': referrals.typeFor(data.heard),
     'Referrer School': clean(data.referrerSchool, 200),
     'Referrer Email': isEmail(clean(data.referrerEmail, 200)) ? clean(data.referrerEmail, 200) : '',
     'Program to Credit': clean(data.referrerProgram, 200),
