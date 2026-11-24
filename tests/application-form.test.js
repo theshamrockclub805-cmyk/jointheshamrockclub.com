@@ -43,7 +43,7 @@ module.exports = async function (t) {
     // --- a referrer may work at any school, including one closed to sponsors
     const schools = await pg.$$eval('#referrer-school option',
       os => os.filter(o => o.value).map(o => ({ value: o.value, disabled: o.disabled })));
-    t('all 11 schools offered as a referrer school', schools.length === 11, schools.length);
+    t('all 12 schools offered as a referrer school', schools.length === 12, schools.length);
     t('none disabled - the Oxnard hold is about sponsors, not staff',
       schools.every(o => !o.disabled), schools.filter(o => o.disabled));
     t('Oxnard is selectable for a referrer',

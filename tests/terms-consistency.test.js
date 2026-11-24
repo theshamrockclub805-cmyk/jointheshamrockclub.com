@@ -98,6 +98,51 @@ module.exports = async function (t) {
   // ones that actually accrue. The form is a static page and cannot read the
   // lib, so nothing but this holds the two together: a rate changed in one
   // place and not the other is a promise the payout quietly breaks.
+  // --- the school list lives in four places: two dropdowns on the form, the
+  // printed one-pager and the canvassing grid. It has drifted before, and a
+  // school missing from one of them is a school nobody can be signed up for
+  // with no error anywhere. These hold them together.
+  const form = readRepo('application-form.html');
+  const optionsIn = id => {
+    const block = form.slice(form.indexOf('id="' + id + '"'));
+    return (block.slice(0, block.indexOf('</select>')).match(/<option[^>]*>([^<]*)<\/option>/g) || [])
+      .map(o => o.replace(/<[^>]*>/g, '').trim())
+      .map(o => o.replace(/ &mdash; temporarily unavailable$/, ''))
+      .filter(o => o && !/^Select one$|^No preference/.test(o));
+  };
+  const referrerSchools = optionsIn('referrer-school');
+  const sponsorSchools = optionsIn('school');
+  t('the two dropdowns offer the same schools',
+    referrerSchools.join('|') === sponsorSchools.join('|'),
+    { referrer: referrerSchools, sponsor: sponsorSchools });
+  t('both are in alphabetical order, so a new one is added in the right place',
+    referrerSchools.join('|') === [...referrerSchools].sort().join('|'), referrerSchools);
+
+  // The one-pager and the grid use short names, so these compare counts and
+  // check each short name is the start of a real school rather than matching
+  // the strings exactly.
+  const onePager = readRepo('sponsor-one-pager.html');
+  const listed = (onePager.match(/<strong>Schools in the network:<\/strong>([\s\S]*?)<\/p>/) || ['', ''])[1]
+    .replace(/\s+/g, ' ').split('&middot;').map(x => x.trim()).filter(Boolean);
+  t('the one-pager lists every school', listed.length === referrerSchools.length,
+    { onePager: listed.length, schools: referrerSchools.length, listed });
+  t('and every name on it is a real school',
+    listed.every(short => referrerSchools.some(full => full.startsWith(short))),
+    listed.filter(short => !referrerSchools.some(full => full.startsWith(short))));
+
+  const plan = readRepo('marketing-plan.html');
+  const columns = (plan.match(/<th class="sch">/g) || []).length;
+  t('the canvassing grid has a column per school', columns === referrerSchools.length,
+    { columns, schools: referrerSchools.length });
+  const sums = plan.match(/(\d+) sellable categories &times; (\d+) schools = (\d+) single-school slots/);
+  t('the grid states the right school count', sums && Number(sums[2]) === referrerSchools.length,
+    sums && sums[0]);
+  t('and its slot arithmetic is right',
+    sums && Number(sums[1]) * Number(sums[2]) === Number(sums[3]), sums && sums[0]);
+  t('the grid has a cell for every category and school',
+    (plan.match(/<td class="cell">/g) || []).length === Number(sums[1]) * Number(sums[2]),
+    (plan.match(/<td class="cell">/g) || []).length);
+
   // --- the nonprofit disclosure. Saying "501(c)(3)" prominently and NOT
   // saying what that does to deductibility is the inference people make on
   // their own, and it is the one the signed agreement contradicts. Wherever
@@ -121,7 +166,6 @@ module.exports = async function (t) {
     /over 10 high schools/i.test(readRepo('index.html')), 'over 10 high schools');
 
   const referrals = freshRequire('netlify/lib/referrals.js');
-  const form = readRepo('application-form.html');
   const district = referrals.asPercent(referrals.RATES[referrals.DISTRICT]);
   t('the form promises a district employee ' + district,
     form.includes('school program earns ' + district), district);
