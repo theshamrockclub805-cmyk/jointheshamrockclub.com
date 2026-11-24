@@ -69,8 +69,17 @@ module.exports = async function (t) {
   for (const [key, amount] of [['bronze', 497], ['silver', 997], ['gold', 1997]]) {
     t(key + ' is $' + amount + ' server-side', packages[key].amount === amount, packages[key]);
   }
-  t('District Champion covers all 11 schools', packages['district-champion'].schools === 11,
+  t('District Champion covers 10 schools', packages['district-champion'].schools === 10,
     packages['district-champion']);
+  // The network is bigger than the biggest package, so no tier may claim to
+  // cover "all" of it. That claim was true at 11 schools and is not any more.
+  // HTML comments are stripped first: this is about what a sponsor reads, and
+  // a note to the next developer is not a promise to anybody.
+  const visible = page => readRepo(page).replace(/<!--[\s\S]*?-->/g, '');
+  for (const page of ['index.html', 'application-form.html', 'sponsor-one-pager.html']) {
+    const claim = visible(page).match(/all \d+ schools|all of our schools|every school\b/i);
+    t(page + ' never claims a tier covers every school', !claim, claim && claim[0]);
+  }
   t('the homepage quotes $497', /\$497/.test(index));
   t('the homepage quotes $997', /\$997/.test(index));
   t('the homepage quotes $1,997', /\$1,997/.test(index));
@@ -89,18 +98,48 @@ module.exports = async function (t) {
   // ones that actually accrue. The form is a static page and cannot read the
   // lib, so nothing but this holds the two together: a rate changed in one
   // place and not the other is a promise the payout quietly breaks.
+  // --- the nonprofit disclosure. Saying "501(c)(3)" prominently and NOT
+  // saying what that does to deductibility is the inference people make on
+  // their own, and it is the one the signed agreement contradicts. Wherever
+  // the page claims the status, it has to carry the caveat too.
+  const EIN = '61-2052400';
+  for (const page of ['index.html', 'sponsor-one-pager.html', 'membership-agreement.html']) {
+    const text = readRepo(page);
+    t(page + ' states the 501(c)(3) status', /501\(c\)\(3\)/.test(text), page);
+    t(page + ' states the EIN ' + EIN, text.includes(EIN), page);
+    t(page + ' says a fee is not a deductible charitable contribution',
+      /not\b[^.]{0,60}(tax-deductible|deductible)/i.test(text), page);
+  }
+  t('no page quotes a different EIN',
+    ['index.html', 'sponsor-one-pager.html', 'membership-agreement.html', 'privacy.html']
+      .every(p => (readRepo(p).match(/\b\d{2}-\d{7}\b/g) || []).every(n => n === EIN)));
+  t('the landing page points at the privacy policy',
+    /href="\/privacy\.html"/.test(readRepo('index.html')));
+
+  // --- the network outgrew a hard count, so the page states a floor instead
+  t('the landing page says "over 10" rather than a number that goes stale',
+    /over 10 high schools/i.test(readRepo('index.html')), 'over 10 high schools');
+
   const referrals = freshRequire('netlify/lib/referrals.js');
   const form = readRepo('application-form.html');
   const district = referrals.asPercent(referrals.RATES[referrals.DISTRICT]);
-  const individual = referrals.asPercent(referrals.RATES[referrals.INDIVIDUAL]);
   t('the form promises a district employee ' + district,
     form.includes('school program earns ' + district), district);
-  t('the form promises an individual ' + individual,
-    form.includes('earns ' + individual + ' of your first year'), individual);
   t('the form quotes no rate the code does not pay',
     (form.match(/\b\d{1,2}% of your first year\b/g) || [])
-      .every(phrase => phrase.startsWith(district) || phrase.startsWith(individual)),
+      .every(phrase => phrase.startsWith(district)),
     form.match(/\b\d{1,2}% of your first year\b/g));
+
+  // --- an individual referral is recorded and promised nothing. A percentage
+  // appearing next to it on the page would be a commitment nobody agreed to
+  // pay, and the form is the only place a referrer ever reads one.
+  const individualBlock = (form.match(/<div id="individual-referral"[\s\S]*?<\/div>/) || [''])[0];
+  t('the individual referral block exists', individualBlock.length > 0);
+  t('and promises no percentage', !/\d{1,2}\s*%/.test(individualBlock), individualBlock);
+  t('and promises no payment at all',
+    !/\b(earn|paid|payment|reward|commission)\b/i.test(individualBlock), individualBlock);
+  t('the code backs that up with no individual rate',
+    referrals.isRecordOnly(referrals.INDIVIDUAL) === true);
 
   // --- the two labels that decide a rate must exist on the form exactly as
   // the code spells them, or the dropdown pays nobody

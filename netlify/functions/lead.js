@@ -46,7 +46,7 @@ var PACKAGES = {
   'gold':              { label: 'Gold',              amount: 1997, schools: 1 },
   'district-partner':  { label: 'District Partner',  amount: 3197, schools: 2 },
   'district-leader':   { label: 'District Leader',   amount: 5997, schools: 5 },
-  'district-champion': { label: 'District Champion', amount: 9997, schools: 11 },
+  'district-champion': { label: 'District Champion', amount: 9997, schools: 10 },
   'undecided':         { label: 'Not sure yet',      amount: null, schools: null }
 };
 

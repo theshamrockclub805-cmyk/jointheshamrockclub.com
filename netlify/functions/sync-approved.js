@@ -57,8 +57,8 @@ var HUB_BASE    = env('AIRTABLE_HUB_BASE_ID') || 'appGG8camPZ04Tsz6';
 var CLIENTS_TBL = env('AIRTABLE_HUB_CLIENTS_TABLE_ID') || 'tblQTVkBcVnolpo0P';
 var PACKAGES_TBL= env('AIRTABLE_HUB_PACKAGES_TABLE_ID') || 'tblEiajhPxOQmlQ69';
 
-// A referral earns a share of the sponsor's FIRST YEAR: 15% to a district
-// employee's school program, 10% to an individual. The rates and the
+// A district employee's school program earns 15% of the sponsor's FIRST YEAR.
+// An individual referral is recorded and promised nothing. The rates and the
 // source -> type translation live in lib/referrals.js, so the form, the intake
 // function and this payout logic cannot disagree about who is owed what. The
 // arithmetic stays server-side like every other price in this project: the
@@ -485,52 +485,58 @@ async function recordSchoolSlot(token, app, schoolsByName, options) {
 /**
  * What a school staff referral is worth, and who it belongs to.
  *
- * Returns {} unless this application actually claims one, so a sponsor who
- * found us on Instagram carries no referral fields at all rather than a row of
- * zeroes that look like an unpaid debt.
+ * Returns {} unless this application actually names a referrer, so a sponsor
+ * who found us on Instagram carries no referral fields at all rather than a
+ * row of zeroes that look like an unpaid debt.
  *
- * Each type has to name a payee before any money is recorded as owed:
+ * Only a district employee accrues money, and only once the school is named,
+ * because the school is what identifies the program being paid. An individual
+ * referral is recorded - the type and who they are - with no amount, no rate
+ * and no status: nothing was promised to them, so nothing may read as owed.
+ * If a payout is later agreed case by case, typing an amount into Referral
+ * Payout Due puts it through the same verification and payment gates as any
+ * other.
  *
- *   District employee  the school, because that is what identifies the program
- *   Individual         a name AND an email, because the person IS the payee
- *
- * Without those there is nobody to pay, so it stays an unattributed claim on
- * the application rather than a debt on the books. The amount also accrues
- * now and is payable later: approval is not cash. A sponsor can be approved
- * for weeks without paying, and paying a school program out of money that
- * never arrived is not a mistake you can quietly reverse. Referral Verified
- * and Referral Payout Ready on the Client are what say when it may be sent.
+ * The amount accrues now and is payable later: approval is not cash. A sponsor
+ * can be approved for weeks without paying, and paying a school program out of
+ * money that never arrived is not a mistake you can quietly reverse. Referral
+ * Verified and Referral Payout Ready on the Client are what say when it may
+ * actually be sent.
  */
 function referralFieldsFrom(f) {
   // Referrer Type is stamped at intake. Applications filed before it existed
   // fall back to the source they came in on, so an in-flight referral is not
   // dropped by this change.
   var type = selectName(f['Referrer Type']) || referrals.typeFor(f['How Did You Hear']);
-  var rate = referrals.rateFor(type);
-  if (!rate) return {};
+  if (!type) return {};
+
+  var name = String(f['Referred By'] || '').trim();
+  var email = String(f['Referrer Email'] || '').trim();
+
+  // Recorded, not owed. Enough to find them and decide later, and deliberately
+  // no money fields: a blank Referral Payout Due is what keeps this off the
+  // payable worklist entirely.
+  if (referrals.isRecordOnly(type)) {
+    if (!name) return {};
+    return {
+      'Referrer Type': type,
+      'Referral Credit': (name + (email ? ' <' + email + '>' : '')).slice(0, 250)
+    };
+  }
 
   var amount = Number(f['Annual Sponsorship Amount']) || 0;
   if (amount <= 0) return {};
 
-  var name = String(f['Referred By'] || '').trim();
-  var credit;
+  var school = selectName(f['Referrer School']) || '';
+  if (!school) return {};
 
-  if (type === referrals.DISTRICT) {
-    var school = selectName(f['Referrer School']) || '';
-    if (!school) return {};
-    // The school is the payee here, so an unnamed referrer is a gap to chase
-    // rather than a reason to withhold the program's money.
-    credit = (name || 'Unnamed staff member') + ' (' + school + ')';
-    var program = f['Program to Credit'];
-    if (program) credit += ' \u2014 ' + program;
-  } else {
-    // An individual is paid personally, which means a W-9 before any money
-    // moves. A name with no way to reach them is not a payee.
-    var email = String(f['Referrer Email'] || '').trim();
-    if (!name || !email) return {};
-    credit = name + ' <' + email + '>';
-  }
+  // The school is the payee here, so an unnamed referrer is a gap to chase
+  // rather than a reason to withhold the program's money.
+  var credit = (name || 'Unnamed staff member') + ' (' + school + ')';
+  var program = f['Program to Credit'];
+  if (program) credit += ' \u2014 ' + program;
 
+  var rate = referrals.rateFor(type);
   return {
     'Referrer Type': type,
     'Referral Credit': credit.slice(0, 250),

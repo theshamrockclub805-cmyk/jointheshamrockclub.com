@@ -19,9 +19,9 @@ Each one guards something that has actually gone wrong on this project:
 
 | File | Guards |
 | --- | --- |
-| `referral-payout.test.js` | Both referral rates — 15% to a district employee's school program, 10% to an individual — who is owed, how much, that the two tiers cannot be confused, and that nothing is payable before the sponsor has paid us. |
-| `terms-consistency.test.js` | That the agreement, the confirmation page, the founder email and the version stamped on signings all state the same terms, and that the referral rates promised on the form are the ones that actually accrue. This has drifted twice. |
-| `application-form.test.js` | The referral block on the live form, which is all show/hide behaviour — reading the markup proves nothing. Includes that a teacher's email is never carried into a 10% personal payout. Needs a browser. |
+| `referral-payout.test.js` | The 15% owed to a district employee's school program: who is owed, how much, and that nothing is payable before the sponsor has paid us. Also that an individual referral is *recorded and owed nothing* — a payout amount landing on one of those rows would mean money promised to someone who was never promised any. |
+| `terms-consistency.test.js` | That the agreement, the confirmation page, the founder email and the version stamped on signings all state the same terms; that the referral rate promised on the form is the one that actually accrues; that the 501(c)(3) status and EIN appear wherever they are claimed, always with the not-deductible caveat; and that no tier claims to cover every school. This has drifted twice. |
+| `application-form.test.js` | The referral block on the live form, which is all show/hide behaviour — reading the markup proves nothing. Includes that an individual referral is never shown a reward, and that a teacher's details never follow a switch to a different referrer. Needs a browser. |
 | `approved-sync.test.js` | The scheduled sync across all three bases: the retry hole that left a sponsor holding a slot nobody charged, the verification gate, the Oxnard hold, founder registration, and that an idle tick stays cheap. |
 | `payment-guard.test.js` | That `/pay` refuses anyone who does not owe money yet, and that Stripe is never even contacted for them. |
 | `welcome-heartbeat.test.js` | That the welcome job reports in on every working tick, names the sponsor and reason when one is missed, and cannot be brought down by the health table it writes to. |

@@ -310,7 +310,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
               <input type="radio" name="tier" value="district-champion">
               <span class="card">
                 <span class="dot" aria-hidden="true"></span>
-                <span class="meta"><span class="name">District Champion</span><span class="desc">District-wide reach, all 11 schools</span></span>
+                <span class="meta"><span class="name">District Champion</span><span class="desc">Our widest reach, 10 schools of your choice</span></span>
                 <span class="cost">$9,997 <small>/ yr</small></span>
               </span>
             </label>
@@ -490,17 +490,21 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
             <p class="error-msg">Please tell us who, so we can give them credit.</p>
           </div>
 
-          <!-- Two of the answers above pay a referral on the first year: a district
-               employee earns 15% for their school program, anyone else earns 10%
-               for themselves. "A coach at Ventura" is not something anyone can
-               pay, so these fields ask for enough to actually send the money.
+          <!-- One of the answers above pays a referral on the first year: a
+               district employee earns 15% for their school program. "A coach at
+               Ventura" is not something anyone can pay, so these fields ask for
+               enough to actually send the money.
+               A named individual is recorded and promised NOTHING here. Their
+               details are taken so they can be thanked and so the referral can
+               be looked at, and the page says no more than that - anything
+               about a reward would be a promise nobody has agreed to pay.
                The email is shared by both paths - one input, so a switch between
                them cannot post two conflicting answers. -->
           <div class="field" id="referrer-email-field" hidden>
             <label for="referrer-email" id="referrer-email-label">Their email</label>
             <input type="email" id="referrer-email" name="referrerEmail" maxlength="200">
             <p class="hint" id="referrer-email-hint">Optional. It lets us confirm the referral with them before we pay their program.</p>
-            <p class="error-msg">We need their email to confirm the referral and arrange their payment.</p>
+            <p class="error-msg">That does not look like an email address.</p>
           </div>
 
           <!-- Every school is selectable here, Oxnard included - the hold above
@@ -536,9 +540,7 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
           </div>
 
           <div id="individual-referral" hidden>
-            <p class="hint">Whoever sent you earns 10% of your first year once you are on board and paid up.
-            We will confirm it with them first, and we need a few tax details from them before anything
-            can be sent &mdash; so their email above is how we reach them.</p>
+            <p class="hint">We like to know who sent you, so we can thank them properly.</p>
           </div>
         </fieldset>
 
@@ -631,8 +633,8 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       items:['Gold-level benefits at 2 schools of your choice','Quarterly impact report','Spotlight on the shared Corporate Partners page','One Oxnard USA featured boost placement per quarter','10% discount on Oxnard USA ad placements']},
     'district-leader':{name:'District Leader',desc:'Corporate \u00b7 5 schools',price:'$5,997',meta:'Separately $9,985 \u00b7 save $3,988 (40% off)',
       items:['Gold-level benefits at 5 schools','Quarterly impact report','Dedicated sponsor spotlight page on the Shamrock website','Monthly featured boost placement on the Oxnard USA platform','Podcast-style interview on Oxnard USA','Co-branded impact video','20% discount on Oxnard USA ad placements']},
-    'district-champion':{name:'District Champion',desc:'Corporate \u00b7 all 11 schools',price:'$9,997',meta:'Separately $21,967 \u00b7 save $11,970 (54% off)',
-      items:['Gold-level benefits at all 11 schools','Quarterly impact report','Founding Champion recognition','Spotlight page + homepage placement on the Shamrock website','Weekly featured boost across the Oxnard USA platform','Recurring podcast segment on Oxnard USA','Co-branded impact video','Zone exclusivity across all 10 zones, built in',"Invitation to Shamrock's annual partner appreciation dinner",'30% discount on Oxnard USA ad placements']},
+    'district-champion':{name:'District Champion',desc:'Corporate \u00b7 10 schools',price:'$9,997',meta:'Separately $21,967 \u00b7 save $11,970 (54% off)',
+      items:['Gold-level benefits at 10 schools of your choice','Quarterly impact report','Founding Champion recognition','Spotlight page + homepage placement on the Shamrock website','Weekly featured boost across the Oxnard USA platform','Recurring podcast segment on Oxnard USA','Co-branded impact video','Zone exclusivity across all 10 zones, built in',"Invitation to Shamrock's annual partner appreciation dinner",'30% discount on Oxnard USA ad placements']},
     'undecided':{name:'Not sure yet',desc:"We'll recommend the right fit",price:'\u2014',meta:'Our team will walk you through the options',
       items:['Compare the single-school tiers','Understand category exclusivity at your school','Ask about multi-school corporate options','No commitment until you confirm']}
   };
@@ -740,7 +742,6 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
   // is what actually accrues the money - a test holds the two together.
   var STAFF_REFERRAL = 'A teacher, coach or school staff member';
   var INDIVIDUAL_REFERRAL = 'A friend or someone I know';
-  var INDIVIDUAL_RATE = '10%';
 
   var REFERRAL_PROMPTS = {
     'Oxnard USA': ['Who at Oxnard USA? (optional)', 'A name, or where you saw it: newsletter, podcast, website...', false],
@@ -798,9 +799,9 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
    * Show only the fields the chosen referral type can actually be paid from.
    *
    * A district employee needs a school, because that is what names the program
-   * the 15% goes to. An individual needs an email, because they are the payee
-   * themselves and nobody can be paid - or asked for the tax details that have
-   * to come first - through a name alone.
+   * the 15% goes to. A named individual needs nothing beyond their name: no
+   * payout is promised, so no field here is load-bearing for one, and asking
+   * for more would imply a reward that has not been agreed.
    */
   var lastReferralType = null;
   function updateReferralExtras(){
@@ -812,17 +813,8 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     individualBlock.hidden = !isIndividual;
     emailField.hidden = !pays;
 
-    emailLabel.innerHTML = '';
-    emailLabel.appendChild(document.createTextNode('Their email '));
-    if (isIndividual) {
-      var req = document.createElement('span');
-      req.className = 'req';
-      req.textContent = '*';
-      emailLabel.appendChild(req);
-    }
     emailHint.textContent = isIndividual
-      ? 'We need this one. It is how we confirm the referral with them and arrange their ' +
-        INDIVIDUAL_RATE + '.'
+      ? 'Optional, and only so we can reach them to say thank you.'
       : 'Optional. It lets us confirm the referral with them before we pay their program.';
 
     // Clear every answer that the new choice has changed the meaning of.
@@ -833,10 +825,10 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
     // credits somebody else entirely.
     //
     // The email is shared by both paths, but it does NOT survive a switch
-    // between them, because the payee it describes is a different person and a
-    // different kind of payment. Carrying a teacher's address into an
-    // individual referral would set up a 15%-to-the-program referrer to be
-    // paid 10% personally instead - the one thing this scheme must never do.
+    // between them, because it describes a different person on each side.
+    // Carrying a teacher's address over to "a friend" would attach a district
+    // employee's contact details to a referral their program is not being paid
+    // for - the record that gets acted on wrongly months later.
     var type = isStaff ? 'staff' : (isIndividual ? 'individual' : null);
     var stale = isStaff ? [] : ['referrer-school', 'referrer-program'];
     if (type !== lastReferralType) stale.push('referrer-email');
@@ -878,20 +870,24 @@ footer{background:#080525;color:#c6c1dd;padding:38px 0}
       referredField.classList.remove('invalid');
     }
 
-    // Each paying referral has one field that decides whether anybody can
-    // actually be paid, so that field is required when it applies. Without it
-    // the application still goes through - it just earns nobody anything, and
-    // the person who sent them here would never know why.
+    // A staff referral promises 15% to a school program. Without the school we
+    // cannot tell which program, so that one field is required when it
+    // applies. Nothing is required for an individual referral, because nothing
+    // is promised for one.
     if (heardEl.value === STAFF_REFERRAL) {
       var schoolField = referrerSchool.closest('.field');
       var schoolOk = referrerSchool.value.trim().length > 0;
       schoolField.classList.toggle('invalid', !schoolOk);
       if (!schoolOk) valid = false;
-    } else if (heardEl.value === INDIVIDUAL_REFERRAL) {
-      var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
-      emailField.classList.toggle('invalid', !emailOk);
-      if (!emailOk) valid = false;
     }
+
+    // The referrer email is optional everywhere, but a typo in it is still
+    // worth catching: an address nobody can reach is worse than none, because
+    // it looks like a way to contact them.
+    var typedEmail = emailInput.value.trim();
+    var emailBad = typedEmail.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail);
+    emailField.classList.toggle('invalid', emailBad);
+    if (emailBad) valid = false;
 
     var licenseEl = document.getElementById('license');
     var looksLikeSsn = SSN_PATTERN.test(licenseEl.value);

@@ -298,6 +298,28 @@ header .brand img{height:54px}
 .hero .lede{font-size:clamp(18px,2vw,21px);line-height:1.55;max-width:690px;color:#e6e4f4;margin-bottom:0}
 .hero-actions{margin-top:32px}
 .hero-note{color:#c7c5db}
+/* Who we are, stated where everyone sees it rather than only in the
+   agreement. The network size is written as "over 10" on purpose: schools
+   join and a hard count goes stale on the page long before anyone notices. */
+.hero-trust{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0;padding:0}
+.hero-trust li{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12px;font-weight:600;color:#e9e7f7;
+  padding:6px 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;
+  background:rgba(255,255,255,.07);backdrop-filter:blur(8px);
+}
+.hero-trust svg{width:13px;height:13px;flex:none;color:#ffb7b4}
+.nonprofit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:8px}
+.nonprofit-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 8px 22px rgba(30,20,80,.05)}
+.nonprofit-card h3{font-size:17px;margin:0 0 10px;color:var(--blue)}
+.nonprofit-card p{margin:0;color:var(--muted);font-size:15px;line-height:1.6}
+.nonprofit-card p+p{margin-top:10px}
+/* Links are unstyled globally (a{color:inherit;text-decoration:none}), so an
+   inline one inside body copy has to opt back in or it reads as plain text. */
+.nonprofit-card a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
+.nonprofit-card a:hover{color:var(--red-deep)}
+.nonprofit-ein{display:inline-block;margin-top:18px;font-size:13px;color:var(--muted)}
+.nonprofit-ein b{color:var(--ink)}
 .hero-panel{
   padding:30px;
   background:rgba(255,255,255,.95);
@@ -527,6 +549,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
           <a class="btn btn-outline" href="#inquire">Talk to Our Team First</a>
         </div>
         <p class="hero-note">Choose a package online, or request a quick call if you want help finding the right fit.</p>
+        <ul class="hero-trust" aria-label="About The Shamrock Club">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3 4 6.5v5c0 4.6 3.2 8.4 8 9.5 4.8-1.1 8-4.9 8-9.5v-5L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.8 12 2.2 2.2 4.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Registered 501(c)(3) nonprofit</li>
+          <li>Over 10 high schools in the network</li>
+          <li>Ventura County, California</li>
+        </ul>
       </div>
 
       <aside class="hero-panel">
@@ -735,7 +762,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
         <article class="corporate-card">
           <h4>District Champion</h4>
           <div class="corporate-price">$9,997/yr</div>
-          <p>All 11 schools · district-wide sponsorship reach</p>
+          <p>10 schools of your choice · our widest reach</p>
           <ul>
             <li>Quarterly impact report</li>
             <li>Founding Champion recognition</li>
@@ -887,13 +914,48 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
       </details>
       <details class="faq-item">
         <summary>How do the corporate sponsorships work?</summary>
-        <p>Corporate options provide Gold-level benefits across multiple schools &mdash; 2 schools at District Partner, 5 at District Leader, and all 11 at District Champion. They also unlock featured visibility across Oxnard USA, plus discounted ad placements, without requiring a separate Oxnard USA membership purchase.</p>
+        <p>Corporate options provide Gold-level benefits across multiple schools &mdash; 2 schools at District Partner, 5 at District Leader, and 10 at District Champion. They also unlock featured visibility across Oxnard USA, plus discounted ad placements, without requiring a separate Oxnard USA membership purchase.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is The Shamrock Club a registered nonprofit?</summary>
+        <p>Yes. The Shamrock Club is a registered 501(c)(3) nonprofit organization, EIN 61-2052400, based in Ventura County. Sponsorship money goes into running the program and supporting the school programs we partner with.</p>
+        <p>One thing worth being straight about: a sponsorship is <strong>not</strong> a tax-deductible charitable donation, because you receive advertising and promotional value in return for it. Most businesses can treat it as an ordinary advertising or marketing expense instead &mdash; check with your own accountant. If you would rather make a straight donation with nothing in return, we can receipt that separately.</p>
       </details>
       <details class="faq-item">
         <summary>What if I am interested but not ready to purchase online?</summary>
         <p>Use the inquiry form to request more information or a phone conversation before completing the sponsorship application.</p>
       </details>
     </div>
+  </div>
+</section>
+
+<section class="section" id="nonprofit" aria-labelledby="nonprofit-title">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Who you are sponsoring</p>
+      <h2 id="nonprofit-title">A registered 501(c)(3) nonprofit, working with over 10 high schools.</h2>
+      <p>We think you should be able to see exactly what we are and how the money works before you sponsor anything &mdash; not after.</p>
+    </div>
+    <div class="nonprofit-grid">
+      <div class="nonprofit-card">
+        <h3>Our status</h3>
+        <p>The Shamrock Club is a registered 501(c)(3) nonprofit organization in the State of California, EIN 61-2052400. We connect local businesses with high schools across Ventura County.</p>
+      </div>
+      <div class="nonprofit-card">
+        <h3>Where the money goes</h3>
+        <p>Sponsorship funds the program and the school programs we partner with &mdash; teams, bands, clubs and the activities that keep students in them. Where a referral comes from a teacher or coach, 15% of that first-year sponsorship goes directly to their school program.</p>
+      </div>
+      <div class="nonprofit-card">
+        <h3>About tax deductions</h3>
+        <p>A sponsorship is <strong>not</strong> a tax-deductible charitable contribution. You get advertising and recognition in return for it, which is what makes it a sponsorship rather than a gift.</p>
+        <p>Most businesses can treat it as an ordinary advertising expense &mdash; ask your accountant. Prefer to donate with nothing in return? We will receipt that properly.</p>
+      </div>
+      <div class="nonprofit-card">
+        <h3>What we publish about you</h3>
+        <p>Your business name, logo and website appear on our sponsor directory and the materials your tier includes, once you have approved the listing. Your contact details, license or EIN and payment information are never published. See our <a href="/privacy.html">Privacy Policy</a>.</p>
+      </div>
+    </div>
+    <span class="nonprofit-ein">The Shamrock Club &middot; 501(c)(3) nonprofit &middot; EIN <b>61-2052400</b> &middot; Ventura County, California</span>
   </div>
 </section>
 </main>
@@ -904,7 +966,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <footer>
   <div class="wrap footer-row">
     <div class="footer-brand"><img src="shamrock-logo.png" alt="Shamrock Club"></div>
-    <div><div>Supporting Local Communities</div><div style="margin-top:6px;font-size:12px;color:#9f99bb;">@theshamrock_club · theshamrockclub2874 · shamrockclub.net · <a href="/privacy.html" style="color:inherit;">Privacy Policy</a></div></div>
+    <div><div>Supporting Local Communities</div><div style="margin-top:6px;font-size:12px;color:#9f99bb;">The Shamrock Club is a registered 501(c)(3) nonprofit &middot; EIN 61-2052400</div><div style="margin-top:6px;font-size:12px;color:#9f99bb;">@theshamrock_club · theshamrockclub2874 · shamrockclub.net · <a href="/privacy.html" style="color:inherit;">Privacy Policy</a></div></div>
     <div class="footer-social" aria-label="Shamrock Club social and web links">
       <a class="social-icon" href="https://www.instagram.com/theshamrock_club/" target="_blank" rel="noopener noreferrer" aria-label="Follow The Shamrock Club on Instagram" title="Instagram">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
@@ -1067,7 +1129,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </script>
 <script>
 /* The district tiers are negotiated, not self-serve: a near-$10k sponsorship
- * across eleven schools needs a conversation about which schools and what
+ * across ten schools needs a conversation about which schools and what
  * fulfilment looks like, not a form submission. These buttons go to the
  * enquiry form and carry the tier with them, so the team knows which one
  * prompted the enquiry without having to ask. */

@@ -3,10 +3,10 @@
 /**
  * Drives the real application form in a browser.
  *
- * The referral block decides who gets paid and at which of the two rates -
- * 15% to a district employee's school program, 10% to an individual - and it
- * is built entirely out of show/hide behaviour, so reading the markup proves
- * nothing. These checks click through it the way an applicant would.
+ * The referral block decides who gets paid - 15% to a district employee's
+ * school program, and nothing automatic to anyone else - and it is built
+ * entirely out of show/hide behaviour, so reading the markup proves nothing.
+ * These checks click through it the way an applicant would.
  *
  * Skipped where Playwright is not installed - it is not a dependency of this
  * repo, and a missing browser should not read as a broken site.
@@ -112,7 +112,7 @@ module.exports = async function (t) {
     await pg.selectOption('#heard', 'A friend or someone I know');
     t('a friend is an option in its own right, not "Other"',
       await pg.$eval('#heard', e => e.value) === 'A friend or someone I know');
-    t('no staff block for a friend — they earn 10%, but not through a school program',
+    t('no staff block for a friend — no school program is being paid',
       await hidden('#staff-referral') === true);
     t('the hint says why we are asking', /thank/i.test(await text('#referred-hint')),
       await text('#referred-hint'));
@@ -129,43 +129,47 @@ module.exports = async function (t) {
     }
     t('every source offers somewhere to put a name', everySourceAsks, sources);
 
-    // --- an individual referral: the person IS the payee, so the email is the
-    // field that decides whether anyone can be paid at all
+    // --- an individual referral is recorded and promised NOTHING. The page a
+    // referrer's details are typed on is the only place they would ever read a
+    // promise, so it must not make one.
     await pg.selectOption('#heard', FRIEND);
     t('the individual note appears', await hidden('#individual-referral') === false);
-    t('and says what they earn', /10%/.test(await text('#individual-referral')),
+    t('and promises no percentage', !/\d{1,2}\s*%/.test(await text('#individual-referral')),
       await text('#individual-referral'));
-    t('and warns that tax details come first', /tax/i.test(await text('#individual-referral')),
+    t('and offers no reward, only thanks', /thank/i.test(await text('#individual-referral')),
       await text('#individual-referral'));
     t('the email field is shown for an individual', await hidden('#referrer-email-field') === false);
-    t('and marked required', await pg.$eval('#referrer-email-label', e => Boolean(e.querySelector('.req'))));
-    t('and its hint names the 10%', /10%/.test(await text('#referrer-email-hint')),
+    t('but is not required - nothing is promised, so nothing is load-bearing',
+      await pg.$eval('#referrer-email-label', e => !e.querySelector('.req')));
+    t('and its hint mentions no money', !/\d{1,2}\s*%|pay/i.test(await text('#referrer-email-hint')),
       await text('#referrer-email-hint'));
 
+    // A name with no email is a complete individual referral, so it must not
+    // be what stops the form.
     await pg.fill('#referred-by', 'Sam Lee');
     await pg.fill('#referrer-email', '');
-    await pg.click('button[type="submit"]');
-    t('submit blocked with no email for an individual',
-      await pg.$eval('#referrer-email-field', e => e.classList.contains('invalid')));
-    await pg.fill('#referrer-email', 'not-an-email');
-    await pg.click('button[type="submit"]');
-    t('and blocked again on a malformed email',
-      await pg.$eval('#referrer-email-field', e => e.classList.contains('invalid')));
-    // A real email must clear the error - but a submit that passes everything
-    // actually submits, hiding the form and taking the rest of this suite with
-    // it. So hold one unrelated field back: the submit is still blocked, and
-    // the email field alone is what we read.
-    await pg.fill('#referrer-email', 'sam@example.com');
     await pg.fill('#biz-name', '');
     await pg.click('button[type="submit"]');
-    t('accepted once a real email is given',
+    t('an empty email never blocks the form',
       await pg.$eval('#referrer-email-field', e => !e.classList.contains('invalid')));
     t('and the form is still blocked by the empty field we held back',
       await pg.$eval('#biz-name', e => e.closest('.field').classList.contains('invalid')));
+
+    // A typo is still worth catching: an address nobody can reach is worse
+    // than none, because it looks like a way to contact them.
+    await pg.fill('#referrer-email', 'not-an-email');
+    await pg.click('button[type="submit"]');
+    t('a malformed email is still refused',
+      await pg.$eval('#referrer-email-field', e => e.classList.contains('invalid')));
+    await pg.fill('#referrer-email', 'sam@example.com');
+    await pg.click('button[type="submit"]');
+    t('and a real one clears it',
+      await pg.$eval('#referrer-email-field', e => !e.classList.contains('invalid')));
     await pg.fill('#biz-name', 'Test Co');
 
-    // --- a teacher's email must never be carried into a 10% personal payout.
-    // Switching type changes who the payee is, so the address goes with it.
+    // A teacher's contact details must not end up attached to a referral their
+    // program is not being paid for. Switching type changes who is described,
+    // so the address goes with it.
     await pg.selectOption('#heard', STAFF);
     await pg.fill('#referrer-email', 'druiz@vusd.org');
     await pg.selectOption('#heard', FRIEND);
